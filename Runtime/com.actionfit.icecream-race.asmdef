@@ -1,0 +1,16 @@
+{
+  "name": "com.actionfit.icecream-race",
+  "rootNamespace": "ActionFit.IceCreamRace",
+  "references": [
+    "com.actionfit.merge-content-core"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

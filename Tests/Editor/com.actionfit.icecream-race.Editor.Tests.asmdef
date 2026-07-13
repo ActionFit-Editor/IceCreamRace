@@ -1,0 +1,24 @@
+{
+  "name": "com.actionfit.icecream-race.Editor.Tests",
+  "rootNamespace": "ActionFit.IceCreamRace.Tests",
+  "references": [
+    "com.actionfit.icecream-race",
+    "com.actionfit.merge-content-core"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": [
+    "UNITY_INCLUDE_TESTS"
+  ],
+  "versionDefines": [],
+  "noEngineReferences": false,
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}
