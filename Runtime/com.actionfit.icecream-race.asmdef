@@ -2,7 +2,7 @@
   "name": "com.actionfit.icecream-race",
   "rootNamespace": "ActionFit.IceCreamRace",
   "references": [
-    "com.actionfit.merge-content-core"
+    "com.actionfit.content-core"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],

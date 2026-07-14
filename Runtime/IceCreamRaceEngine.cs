@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using ActionFit.MergeContent;
+using ActionFit.Content;
 using UnityEngine;
 
 namespace ActionFit.IceCreamRace

@@ -29,7 +29,7 @@ race.AddTokens(10);
 race.EvaluateTimeout();
 ```
 
-`CreateDefault`는 `com.actionfit.merge-content-core`의 PlayerPrefs 상태 저장소와 로컬 멱등 보상 ledger를 사용합니다. 실제 게임 재화는 프로젝트의 `IContentRewardService` 구현을 생성자에 주입하세요.
+`CreateDefault`는 `com.actionfit.content-core`의 PlayerPrefs 상태 저장소와 로컬 멱등 보상 ledger를 사용합니다. 실제 게임 재화는 프로젝트의 `IContentRewardService` 구현을 생성자에 주입하세요.
 
 ## 프로젝트 연결 경계
 
@@ -63,8 +63,8 @@ race.EvaluateTimeout();
 ```json
 {
   "dependencies": {
-    "com.actionfit.merge-content-core": "https://github.com/ActionFit-Editor/MergeContentCore.git#0.1.0",
-    "com.actionfit.icecream-race": "https://github.com/ActionFit-Editor/IceCreamRace.git#0.1.0"
+    "com.actionfit.content-core": "https://github.com/ActionFit-Editor/ContentCore.git#0.2.0",
+    "com.actionfit.icecream-race": "https://github.com/ActionFit-Editor/IceCreamRace.git#0.1.1"
   }
 }
 ```

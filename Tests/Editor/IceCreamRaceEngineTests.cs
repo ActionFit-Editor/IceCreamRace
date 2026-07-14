@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using ActionFit.MergeContent;
+using ActionFit.Content;
 using NUnit.Framework;
 
 namespace ActionFit.IceCreamRace.Tests

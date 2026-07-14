@@ -8,9 +8,9 @@ This guide is shipped with the package so an AI assistant can preserve the race 
 - Display name: ActionFit Ice Cream Race
 - Repository: `https://github.com/ActionFit-Editor/IceCreamRace.git`
 - Repository visibility: Public
-- Current package version at generation time: `0.1.0`
+- Current package version at generation time: `0.1.1`
 - Unity version: `6000.2`
-- Runtime dependency: `com.actionfit.merge-content-core@0.1.0`
+- Runtime dependency: `com.actionfit.content-core@0.2.0`
 
 ## Purpose
 
@@ -36,7 +36,7 @@ Requested router entry:
 - `IIceCreamRaceClock`, `IIceCreamRaceRandom`, and `IIceCreamRaceOpponentProvider` are the supported replacement boundaries.
 - `SystemIceCreamRaceClock`, `SystemIceCreamRaceRandom`, and `DefaultIceCreamRaceOpponentProvider` provide a runnable local default.
 - `IceCreamRaceStateSerializer` serializes the schema-versioned Unity JSON state and rejects unknown future schema versions.
-- `IContentStateStore` and `IContentRewardService` come from `com.actionfit.merge-content-core`.
+- `IContentStateStore` and `IContentRewardService` come from `com.actionfit.content-core`.
 - Ordinary token progress may remain buffered, but event/race start, result resolution, timeout/end, result claim, and both reward transaction boundaries flush an `IFlushableContentStateStore` when available.
 
 ## Invariants
