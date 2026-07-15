@@ -8,7 +8,7 @@ This guide is shipped with the package so an AI assistant can preserve the race 
 - Display name: ActionFit Ice Cream Race
 - Repository: `https://github.com/ActionFit-Editor/IceCreamRace.git`
 - Repository visibility: Public
-- Current package version at generation time: `0.1.1`
+- Current package version at generation time: `0.1.2`
 - Unity version: `6000.2`
 - Runtime dependency: `com.actionfit.content-core@0.2.0`
 
@@ -58,6 +58,10 @@ Preserve this order:
 3. Verify `HasGranted` after the grant call.
 4. Advance claimed progress and clear pending transaction data.
 5. Save the finalized state.
+
+Reward transaction IDs include the stable content ID and event-instance identity before the
+per-claim suffix: `<contentId>/event/<eventEndUtcTicks>/road/<claimId>`. Do not remove the event
+identity or replace it with a session-only counter.
 
 `Restore` must recover a pending transaction before normal timeout/race restoration. Never rebuild pending rewards from a changed catalog; use the stored snapshot. Never clear pending transaction data during `EndEvent` before recovery succeeds.
 

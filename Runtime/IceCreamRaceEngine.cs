@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using ActionFit.Content;
 using UnityEngine;
 
@@ -372,7 +373,9 @@ namespace ActionFit.IceCreamRace
             EnsureRewardServiceAvailable();
 
             int claimedTarget = _state.RoadPoints;
-            string transactionId = $"{_contentId}/road/{Guid.NewGuid():N}";
+            string eventInstanceId = _state.EventEndUtcTicks.ToString(CultureInfo.InvariantCulture);
+            string transactionId =
+                $"{_contentId}/event/{eventInstanceId}/road/{Guid.NewGuid():N}";
             var rewardStates = new List<IceCreamRaceRewardState>(rewards.Count);
             for (int index = 0; index < rewards.Count; index++)
             {

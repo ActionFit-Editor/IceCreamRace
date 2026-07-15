@@ -156,6 +156,22 @@ namespace ActionFit.IceCreamRace.Tests
         }
 
         [Test]
+        public void ClaimRoadRewards_TransactionIdContainsEventInstanceTicks()
+        {
+            var context = CreateContext();
+            WinCurrentRound(context.Engine);
+            context.Engine.ClaimResult();
+            long eventInstanceTicks = context.Engine.State.EventEndUtcTicks;
+
+            IceCreamRaceRoadClaimResult result = context.Engine.ClaimRoadRewards();
+
+            Assert.That(result.Succeeded, Is.True);
+            Assert.That(
+                result.TransactionId,
+                Does.Contain($"/event/{eventInstanceTicks}/road/"));
+        }
+
+        [Test]
         public void Serializer_NormalizesOlderSchemaAndRejectsFutureSchema()
         {
             var serializer = new IceCreamRaceStateSerializer();

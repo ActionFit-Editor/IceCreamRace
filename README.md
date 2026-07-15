@@ -45,7 +45,7 @@ race.EvaluateTimeout();
 
 ## 보상 복구 계약
 
-`ClaimRoadRewards`는 먼저 transaction ID, 목표 claimed 포인트, 보상 snapshot을 저장한 뒤 `GrantOnce`를 호출합니다. 지급 후 상태 저장 전에 앱이 종료되면 `Restore`가 ledger를 확인하고 claimed 포인트만 확정합니다. 지급 전에 종료되면 저장된 snapshot을 같은 transaction ID로 다시 지급합니다.
+`ClaimRoadRewards`는 먼저 transaction ID, 목표 claimed 포인트, 보상 snapshot을 저장한 뒤 `GrantOnce`를 호출합니다. transaction ID는 `<contentId>/event/<eventEndUtcTicks>/road/<claimId>` 형식으로 이벤트 인스턴스를 포함합니다. 지급 후 상태 저장 전에 앱이 종료되면 `Restore`가 ledger를 확인하고 claimed 포인트만 확정합니다. 지급 전에 종료되면 저장된 snapshot을 같은 transaction ID로 다시 지급합니다.
 
 프로젝트 보상 구현은 한 transaction의 전체 보상 목록을 원자적으로 처리하고, 동일 transaction ID에 대해 영구적으로 중복 지급하지 않아야 합니다.
 
@@ -64,7 +64,7 @@ race.EvaluateTimeout();
 {
   "dependencies": {
     "com.actionfit.content-core": "https://github.com/ActionFit-Editor/ContentCore.git#0.2.0",
-    "com.actionfit.icecream-race": "https://github.com/ActionFit-Editor/IceCreamRace.git#0.1.1"
+    "com.actionfit.icecream-race": "https://github.com/ActionFit-Editor/IceCreamRace.git#0.1.2"
   }
 }
 ```
