@@ -529,6 +529,117 @@ namespace ActionFit.IceCreamRace.Tests
         }
 
         [Test]
+        public void SaveDisplayedMultiplierStep_PersistsOnlyCurrentStepWithoutExplicitFlush()
+        {
+            var import = new IceCreamRaceImportState(
+                3,
+                10,
+                8,
+                0,
+                20f,
+                0,
+                Array.Empty<IceCreamRaceOpponent>(),
+                Array.Empty<int>(),
+                Array.Empty<int>(),
+                0,
+                60,
+                30,
+                true,
+                false,
+                MondayUtc.AddDays(2).Ticks,
+                0,
+                true,
+                true);
+
+            var store = new MemoryStateStore();
+            var engine = new IceCreamRaceEngine(
+                store,
+                new MemoryRewardService(),
+                IceCreamRaceCatalog.CreateCatDetectiveParity(),
+                new ManualClock(MondayUtc),
+                new MinimumRandom(),
+                new FakeOpponentProvider());
+            Assert.That(engine.ImportStateIfEmpty(import), Is.True);
+            string beforeJson = store.Json;
+            const string previousStepToken = "\"_prevDisplayedMultiplierStep\":0";
+            int previousStepTokenCount = beforeJson
+                .Split(new[] { previousStepToken }, StringSplitOptions.None)
+                .Length - 1;
+            Assert.That(previousStepTokenCount, Is.EqualTo(1));
+            int saveCount = store.SaveCount;
+            int flushCount = store.FlushCount;
+
+            engine.SaveDisplayedMultiplierStep();
+
+            Assert.That(engine.State.PrevDisplayedMultiplierStep, Is.EqualTo(2));
+            Assert.That(engine.State.PrevDisplayedTokens, Is.EqualTo(8));
+            Assert.That(engine.State.PrevDisplayedElapsedSeconds, Is.EqualTo(20f));
+            Assert.That(store.SaveCount, Is.EqualTo(saveCount + 1));
+            Assert.That(store.FlushCount, Is.EqualTo(flushCount));
+            Assert.That(
+                store.Json,
+                Is.EqualTo(beforeJson.Replace(
+                    previousStepToken,
+                    "\"_prevDisplayedMultiplierStep\":2")));
+
+            IceCreamRaceEngine restored = new IceCreamRaceEngine(
+                store,
+                new MemoryRewardService(),
+                IceCreamRaceCatalog.CreateCatDetectiveParity(),
+                new ManualClock(MondayUtc),
+                new MinimumRandom(),
+                new FakeOpponentProvider());
+            restored.Restore();
+
+            Assert.That(restored.Round, Is.EqualTo(3));
+            Assert.That(restored.CollectedTokens, Is.EqualTo(10));
+            Assert.That(restored.State.PrevDisplayedTokens, Is.EqualTo(8));
+            Assert.That(restored.State.PrevDisplayedElapsedSeconds, Is.EqualTo(20f));
+            Assert.That(restored.State.PrevDisplayedMultiplierStep, Is.EqualTo(2));
+        }
+
+        [TestCase(1, 0)]
+        [TestCase(4, 3)]
+        [TestCase(5, 3)]
+        public void SaveDisplayedMultiplierStep_ClampsRoundToAvailablePresentationSteps(
+            int round,
+            int expectedStep)
+        {
+            var import = new IceCreamRaceImportState(
+                round,
+                0,
+                0,
+                0,
+                0f,
+                0,
+                Array.Empty<IceCreamRaceOpponent>(),
+                Array.Empty<int>(),
+                Array.Empty<int>(),
+                0,
+                0,
+                0,
+                true,
+                false,
+                MondayUtc.AddDays(2).Ticks,
+                0,
+                true,
+                true);
+            var store = new MemoryStateStore();
+            var engine = new IceCreamRaceEngine(
+                store,
+                new MemoryRewardService(),
+                IceCreamRaceCatalog.CreateCatDetectiveParity(),
+                new ManualClock(MondayUtc),
+                new MinimumRandom(),
+                new FakeOpponentProvider());
+            Assert.That(engine.ImportStateIfEmpty(import), Is.True);
+
+            engine.SaveDisplayedMultiplierStep();
+
+            Assert.That(engine.State.PrevDisplayedMultiplierStep, Is.EqualTo(expectedStep));
+        }
+
+        [Test]
         public void UnavailableRewardService_FailsBeforeWritingPendingTransaction()
         {
             var store = new MemoryStateStore();

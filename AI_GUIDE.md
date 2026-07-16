@@ -8,7 +8,7 @@ This guide is shipped with the package so an AI assistant can preserve the race 
 - Display name: ActionFit Ice Cream Race
 - Repository: `https://github.com/ActionFit-Editor/IceCreamRace.git`
 - Repository visibility: Public
-- Current package version at generation time: `0.1.2`
+- Current package version at generation time: `0.1.3`
 - Unity version: `6000.2`
 - Runtime dependency: `com.actionfit.content-core@0.2.0`
 
@@ -38,6 +38,7 @@ Requested router entry:
 - `IceCreamRaceStateSerializer` serializes the schema-versioned Unity JSON state and rejects unknown future schema versions.
 - `IContentStateStore` and `IContentRewardService` come from `com.actionfit.content-core`.
 - Ordinary token progress may remain buffered, but event/race start, result resolution, timeout/end, result claim, and both reward transaction boundaries flush an `IFlushableContentStateStore` when available.
+- `SaveDisplayedMultiplierStep()` acknowledges only the current round-derived `0..3` multiplier presentation step. It does not change token or elapsed-time display baselines and uses the ordinary buffered persistence path.
 
 ## Invariants
 

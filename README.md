@@ -42,6 +42,7 @@ race.EvaluateTimeout();
 - 진행 중 이벤트의 catalog를 업데이트할 때는 `IIceCreamRaceCatalogResolver`에 이전 version/revision catalog도 등록해야 합니다. 등록하지 않은 저장값은 조용히 새 밸런스를 적용하지 않고 명시적으로 복구를 중단합니다.
 - `IsRewardServiceAvailable`이 `false`이면 보상 버튼을 노출하지 마세요. 도달한 보상이 있을 때 `ClaimRoadRewards`를 호출하면 pending 상태를 쓰기 전에 중단됩니다.
 - `IceCreamRaceEngine`은 sealed이며 결과 확정, 상태 전이, 보상 복구 순서는 override할 수 없습니다. 화면 연출은 별도 presentation 계층에서 확장합니다.
+- MatchStart 같은 화면이 현재 배율 표시를 완료한 뒤에는 `SaveDisplayedMultiplierStep()`으로 배율 단계만 인정할 수 있습니다. 이 호출은 토큰과 경과시간 표시 기준을 변경하지 않습니다.
 
 ## 보상 복구 계약
 
@@ -64,7 +65,7 @@ race.EvaluateTimeout();
 {
   "dependencies": {
     "com.actionfit.content-core": "https://github.com/ActionFit-Editor/ContentCore.git#0.2.0",
-    "com.actionfit.icecream-race": "https://github.com/ActionFit-Editor/IceCreamRace.git#0.1.2"
+    "com.actionfit.icecream-race": "https://github.com/ActionFit-Editor/IceCreamRace.git#0.1.3"
   }
 }
 ```

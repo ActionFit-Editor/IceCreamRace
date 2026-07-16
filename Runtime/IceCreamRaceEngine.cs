@@ -430,7 +430,14 @@ namespace ActionFit.IceCreamRace
         {
             _state.MutablePrevDisplayedTokens = _state.CollectedTokens;
             _state.MutablePrevDisplayedElapsedSeconds = RaceElapsedSeconds;
-            _state.MutablePrevDisplayedMultiplierStep = Math.Max(0, Math.Min(3, _state.Round - 1));
+            _state.MutablePrevDisplayedMultiplierStep = GetCurrentMultiplierStep();
+            Persist(true);
+        }
+
+        /// <summary>Stores the current round-derived step as the previously displayed multiplier step.</summary>
+        public void SaveDisplayedMultiplierStep()
+        {
+            _state.MutablePrevDisplayedMultiplierStep = GetCurrentMultiplierStep();
             Persist(true);
         }
 
@@ -532,6 +539,11 @@ namespace ActionFit.IceCreamRace
         }
 
         private IceCreamRaceRoundDefinition CurrentRound => EventCatalog.GetRound(_state.Round);
+
+        private int GetCurrentMultiplierStep()
+        {
+            return Math.Max(0, Math.Min(3, _state.Round - 1));
+        }
 
         private bool CanEnterRace()
         {
