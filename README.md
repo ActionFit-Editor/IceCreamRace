@@ -64,8 +64,8 @@ race.EvaluateTimeout();
 ```json
 {
   "dependencies": {
-    "com.actionfit.content-core": "https://github.com/ActionFit-Editor/ContentCore.git#0.2.0",
-    "com.actionfit.icecream-race": "https://github.com/ActionFit-Editor/IceCreamRace.git#0.1.4"
+    "com.actionfit.content-core": "https://github.com/ActionFit-Editor/ContentCore.git#0.2.1",
+    "com.actionfit.icecream-race": "https://github.com/ActionFit-Editor/IceCreamRace.git#0.1.5"
   }
 }
 ```
