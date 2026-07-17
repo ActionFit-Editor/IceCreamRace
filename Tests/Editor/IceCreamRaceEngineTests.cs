@@ -598,6 +598,35 @@ namespace ActionFit.IceCreamRace.Tests
             Assert.That(restored.State.PrevDisplayedMultiplierStep, Is.EqualTo(2));
         }
 
+        [Test]
+        public void SaveDisplayedSnapshot_WithCompletedPresentation_ClampsAndNeverRegresses()
+        {
+            TestContext context = CreateContext();
+            IceCreamRaceEngine engine = context.Engine;
+            Assert.That(engine.Matchmake(), Is.True);
+            Assert.That(engine.StartRace(), Is.True);
+            engine.AddTokens(30);
+            context.Clock.Advance(TimeSpan.FromSeconds(50));
+
+            engine.SaveDisplayedSnapshot(10, 20f);
+
+            Assert.That(engine.State.PrevDisplayedTokens, Is.EqualTo(10));
+            Assert.That(engine.State.PrevDisplayedElapsedSeconds, Is.EqualTo(20f));
+            int saveCount = context.Store.SaveCount;
+
+            engine.SaveDisplayedSnapshot(5, 10f);
+
+            Assert.That(engine.State.PrevDisplayedTokens, Is.EqualTo(10));
+            Assert.That(engine.State.PrevDisplayedElapsedSeconds, Is.EqualTo(20f));
+            Assert.That(context.Store.SaveCount, Is.EqualTo(saveCount));
+
+            engine.SaveDisplayedSnapshot(100, 100f);
+
+            Assert.That(engine.State.PrevDisplayedTokens, Is.EqualTo(30));
+            Assert.That(engine.State.PrevDisplayedElapsedSeconds, Is.EqualTo(50f));
+            Assert.That(context.Store.SaveCount, Is.EqualTo(saveCount + 1));
+        }
+
         [TestCase(1, 0)]
         [TestCase(4, 3)]
         [TestCase(5, 3)]

@@ -428,9 +428,22 @@ namespace ActionFit.IceCreamRace
 
         public void SaveDisplayedSnapshot()
         {
-            _state.MutablePrevDisplayedTokens = _state.CollectedTokens;
-            _state.MutablePrevDisplayedElapsedSeconds = RaceElapsedSeconds;
+            ApplyDisplayedSnapshot(_state.CollectedTokens, RaceElapsedSeconds);
             _state.MutablePrevDisplayedMultiplierStep = GetCurrentMultiplierStep();
+            Persist(true);
+        }
+
+        /// <summary>
+        /// Stores only the race progress that a presenter has completely displayed.
+        /// Values are monotonic and cannot advance beyond the current authoritative state.
+        /// </summary>
+        public void SaveDisplayedSnapshot(int displayedTokens, float displayedElapsedSeconds)
+        {
+            if (!ApplyDisplayedSnapshot(displayedTokens, displayedElapsedSeconds))
+            {
+                return;
+            }
+
             Persist(true);
         }
 
@@ -439,6 +452,37 @@ namespace ActionFit.IceCreamRace
         {
             _state.MutablePrevDisplayedMultiplierStep = GetCurrentMultiplierStep();
             Persist(true);
+        }
+
+        private bool ApplyDisplayedSnapshot(int displayedTokens, float displayedElapsedSeconds)
+        {
+            int previousTokens = _state.PrevDisplayedTokens;
+            int currentTokens = _state.CollectedTokens;
+            int nextTokens = currentTokens < previousTokens
+                ? previousTokens
+                : Math.Min(currentTokens, Math.Max(previousTokens, displayedTokens));
+
+            float previousElapsedSeconds = _state.PrevDisplayedElapsedSeconds;
+            float currentElapsedSeconds = RaceElapsedSeconds;
+            float nextElapsedSeconds = previousElapsedSeconds;
+            if (!float.IsNaN(displayedElapsedSeconds)
+                && !float.IsInfinity(displayedElapsedSeconds)
+                && currentElapsedSeconds >= previousElapsedSeconds)
+            {
+                nextElapsedSeconds = Math.Min(
+                    currentElapsedSeconds,
+                    Math.Max(previousElapsedSeconds, displayedElapsedSeconds));
+            }
+
+            if (nextTokens == previousTokens
+                && Math.Abs(nextElapsedSeconds - previousElapsedSeconds) < 0.0001f)
+            {
+                return false;
+            }
+
+            _state.MutablePrevDisplayedTokens = nextTokens;
+            _state.MutablePrevDisplayedElapsedSeconds = nextElapsedSeconds;
+            return true;
         }
 
         public bool MarkFirstPopupShown()

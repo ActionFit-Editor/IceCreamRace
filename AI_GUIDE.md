@@ -8,7 +8,7 @@ This guide is shipped with the package so an AI assistant can preserve the race 
 - Display name: ActionFit Ice Cream Race
 - Repository: `https://github.com/ActionFit-Editor/IceCreamRace.git`
 - Repository visibility: Public
-- Current package version at generation time: `0.1.5`
+- Current package version at generation time: `0.1.6`
 - Unity version: `6000.2`
 - Runtime dependency: `com.actionfit.content-core@0.2.1`
 
@@ -39,6 +39,7 @@ Requested router entry:
 - `IContentStateStore` and `IContentRewardService` come from `com.actionfit.content-core`.
 - Ordinary token progress may remain buffered, but event/race start, result resolution, timeout/end, result claim, and both reward transaction boundaries flush an `IFlushableContentStateStore` when available.
 - `SaveDisplayedMultiplierStep()` acknowledges only the current round-derived `0..3` multiplier presentation step. It does not change token or elapsed-time display baselines and uses the ordinary buffered persistence path.
+- `SaveDisplayedSnapshot(displayedTokens, displayedElapsedSeconds)` acknowledges only a fully completed presentation batch. Both values are monotonic, are clamped to the current authoritative race state, and leave the multiplier baseline unchanged. Interrupted or disabled presenters must not call it for their unfinished target.
 
 ## Invariants
 
@@ -49,6 +50,7 @@ Requested router entry:
 - Claimed reward-road progress is monotonic within an event.
 - An active race must belong to a started event with a positive end time and a pinned catalog pair. Reject malformed cross-field snapshots instead of restoring a permanently stalled race.
 - An empty schedule policy clears all event-owned progress and catalog pins, including orphan imports whose `EventStarted` flag is already false.
+- Previously displayed token and elapsed-time baselines never regress and never advance beyond authoritative progress. A presentation must acknowledge one common elapsed snapshot only after every participant lane in that batch has settled.
 
 ## Durable Reward Contract
 
@@ -78,7 +80,7 @@ Check `IsRewardServiceAvailable` before exposing a claim action. With no claimab
 
 ## Testing
 
-Run `com.actionfit.icecream-race.Editor.Tests`. Keep deterministic fake clocks, random values, opponents, state stores, and reward services. Cover catalog parity, all elimination rounds, curve ranking, deadline resolution, multiplier points, claimed-road bounds, serializer compatibility, and crashes both before and after reward mutation.
+Run `com.actionfit.icecream-race.Editor.Tests`. Keep deterministic fake clocks, random values, opponents, state stores, and reward services. Cover catalog parity, all elimination rounds, curve ranking, deadline resolution, multiplier points, completed-presentation snapshot clamping and non-regression, claimed-road bounds, serializer compatibility, and crashes both before and after reward mutation.
 
 ## Package Tools Menu
 
