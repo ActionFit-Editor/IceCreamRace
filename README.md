@@ -56,7 +56,7 @@ race.EvaluateTimeout();
 
 일반 토큰 증가는 버퍼 저장소에 맡길 수 있지만 이벤트/레이스 시작, 결과 확정, timeout, 결과 claim, 보상 transaction 전후에는 `IFlushableContentStateStore`를 통해 즉시 내보냅니다. 빈 schedule kill switch는 저장된 orphan 이벤트 진행도와 catalog pin도 정리합니다.
 
-## Unity Menu
+## Unity 메뉴
 
 - Package root: `Tools > Package > ActionFit Ice Cream Race`
 - README: `Tools > Package > ActionFit Ice Cream Race > README`
@@ -69,12 +69,12 @@ race.EvaluateTimeout();
 {
   "dependencies": {
     "com.actionfit.content-core": "https://github.com/ActionFit-Editor/ContentCore.git#0.2.2",
-    "com.actionfit.icecream-race": "https://github.com/ActionFit-Editor/IceCreamRace.git#0.1.8"
+    "com.actionfit.icecream-race": "https://github.com/ActionFit-Editor/IceCreamRace.git#0.1.10"
   }
 }
 ```
 
-## Agent Skills
+## Agent Skill 안내
 
 - `$icecream-race-help`: 설치된 스킬 목록을 기준으로 엔진 소유권, 경기 규칙, 저장·보상 계약, 테스트와 프로젝트 통합 경계를 설명합니다.
 - `$icecream-race-audit`: Unity나 게임 상태를 실행하지 않고 소스에서 전이 flush, 탈락·순위, catalog pin, 표시 snapshot, 멱등 보상과 재시작 복구를 점검합니다.

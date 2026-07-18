@@ -8,7 +8,7 @@ This guide is shipped with the package so an AI assistant can preserve the race 
 - Display name: ActionFit Ice Cream Race
 - Repository: `https://github.com/ActionFit-Editor/IceCreamRace.git`
 - Repository visibility: Public
-- Current package version at generation time: `0.1.8`
+- Current package version at generation time: `0.1.10`
 - Unity version: `6000.2`
 - Runtime dependency: `com.actionfit.content-core@0.2.2`
 
