@@ -330,6 +330,34 @@ namespace ActionFit.IceCreamRace
             return true;
         }
 
+        /// <summary>Resolves the active unresolved race as a deterministic first-place developer result.</summary>
+        public bool DevForceWin()
+        {
+            if (!CanForceResult())
+            {
+                return false;
+            }
+
+            _state.MutableCollectedTokens = RequiredTokens;
+            ResolveRace(1);
+            Persist(true, true);
+            return true;
+        }
+
+        /// <summary>Resolves the active unresolved race at the first non-qualifying developer rank.</summary>
+        public bool DevForceLose()
+        {
+            if (!CanForceResult())
+            {
+                return false;
+            }
+
+            int losingRank = Math.Min(ParticipantCount, RankCutoff + 1);
+            ResolveRace(losingRank);
+            Persist(true, true);
+            return true;
+        }
+
         public IceCreamRaceResultClaim ClaimResult()
         {
             if (_state.PendingRank == 0)
@@ -676,6 +704,11 @@ namespace ActionFit.IceCreamRace
             }
 
             return false;
+        }
+
+        private bool CanForceResult()
+        {
+            return IsRaceActive && _state.PendingRank == 0;
         }
 
         private void ResolveRace(int rank)

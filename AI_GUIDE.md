@@ -8,7 +8,7 @@ This guide is shipped with the package so an AI assistant can preserve the race 
 - Display name: ActionFit Ice Cream Race
 - Repository: `https://github.com/ActionFit-Editor/IceCreamRace.git`
 - Repository visibility: Public
-- Current package version at generation time: `0.1.7`
+- Current package version at generation time: `0.1.8`
 - Unity version: `6000.2`
 - Runtime dependency: `com.actionfit.content-core@0.2.2`
 
@@ -47,6 +47,7 @@ Requested router entry:
 - Ordinary token progress may remain buffered, but event/race start, result resolution, timeout/end, result claim, and both reward transaction boundaries flush an `IFlushableContentStateStore` when available.
 - `SaveDisplayedMultiplierStep()` acknowledges only the current round-derived `0..3` multiplier presentation step. It does not change token or elapsed-time display baselines and uses the ordinary buffered persistence path.
 - `SaveDisplayedSnapshot(displayedTokens, displayedElapsedSeconds)` acknowledges only a fully completed presentation batch. Both values are monotonic, are clamped to the current authoritative race state, and leave the multiplier baseline unchanged. Interrupted or disabled presenters must not call it for their unfinished target.
+- `DevForceWin()` and `DevForceLose()` are explicit developer commands on the sealed state owner. They accept only an active race with no pending result, persist and flush through the normal result path, and return `false` without writing for invalid or duplicate calls.
 
 ## Invariants
 
@@ -54,6 +55,7 @@ Requested router entry:
 - Only active opponents contribute to live rank and the cutoff deadline.
 - A finished opponent is always ahead. An unfinished opponent is ahead only when its curve-evaluated progress ratio is greater than the player's ratio.
 - Result claim applies the current round's `1/2/4/10` multiplier before advancing the round. A failed cutoff resets to round 1.
+- A forced win fills authoritative tokens to `RequiredTokens` and resolves rank 1. A forced loss preserves authoritative tokens and resolves `RankCutoff + 1`, clamped to `ParticipantCount`; neither command claims the result or grants road rewards.
 - Claimed reward-road progress is monotonic within an event.
 - An active race must belong to a started event with a positive end time and a pinned catalog pair. Reject malformed cross-field snapshots instead of restoring a permanently stalled race.
 - An empty schedule policy clears all event-owned progress and catalog pins, including orphan imports whose `EventStarted` flag is already false.
@@ -81,13 +83,14 @@ Check `IsRewardServiceAvailable` before exposing a claim action. With no claimab
 
 - Route project order/merge events through a project adapter and call `AddTokens` with the calculated amount.
 - Subscribe presentation code to `StateChanged`; do not add project UI types to the runtime assembly.
+- Route developer controls through the engine commands and let the normal `StateChanged`, pending-result presentation, and `ClaimResult` flow continue. Do not edit serialized state JSON from a project DevTool.
 - Replace local PlayerPrefs implementations with project adapters by constructor injection, without changing engine logic.
 - Keep animation hooks, prefab selection, sound, localization, and analytics in a presentation or project package.
 - Do not copy CatDetective image, audio, Spine, or other licensed assets into this public package without a separate redistribution review.
 
 ## Testing
 
-Run `com.actionfit.icecream-race.Editor.Tests`. Keep deterministic fake clocks, random values, opponents, state stores, and reward services. Cover catalog parity, all elimination rounds, curve ranking, deadline resolution, multiplier points, completed-presentation snapshot clamping and non-regression, claimed-road bounds, serializer compatibility, and crashes both before and after reward mutation.
+Run `com.actionfit.icecream-race.Editor.Tests`. Keep deterministic fake clocks, random values, opponents, state stores, and reward services. Cover catalog parity, all elimination rounds, curve ranking, deadline resolution, developer force-result guards and durable restore, multiplier points, completed-presentation snapshot clamping and non-regression, claimed-road bounds, serializer compatibility, and crashes both before and after reward mutation.
 
 ## Package Tools Menu
 

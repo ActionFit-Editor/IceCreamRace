@@ -529,6 +529,91 @@ namespace ActionFit.IceCreamRace.Tests
         }
 
         [Test]
+        public void DevForceResult_RejectsInactiveRaceAndDuplicatePendingResult()
+        {
+            TestContext context = CreateContext();
+            IceCreamRaceEngine engine = context.Engine;
+            int initialSaveCount = context.Store.SaveCount;
+
+            Assert.That(engine.DevForceWin(), Is.False);
+            Assert.That(engine.DevForceLose(), Is.False);
+            Assert.That(context.Store.SaveCount, Is.EqualTo(initialSaveCount));
+
+            Assert.That(engine.Matchmake(), Is.True);
+            Assert.That(engine.StartRace(), Is.True);
+            Assert.That(engine.DevForceWin(), Is.True);
+            int resolvedSaveCount = context.Store.SaveCount;
+            string resolvedJson = context.Store.Json;
+
+            Assert.That(engine.DevForceWin(), Is.False);
+            Assert.That(engine.DevForceLose(), Is.False);
+            Assert.That(context.Store.SaveCount, Is.EqualTo(resolvedSaveCount));
+            Assert.That(context.Store.Json, Is.EqualTo(resolvedJson));
+        }
+
+        [Test]
+        public void DevForceWin_FillsTargetPersistsAndAdvancesOnClaim()
+        {
+            TestContext context = CreateContext();
+            IceCreamRaceEngine engine = context.Engine;
+            Assert.That(engine.Matchmake(), Is.True);
+            Assert.That(engine.StartRace(), Is.True);
+            int flushCount = context.Store.FlushCount;
+
+            Assert.That(engine.DevForceWin(), Is.True);
+
+            Assert.That(engine.CollectedTokens, Is.EqualTo(engine.RequiredTokens));
+            Assert.That(engine.PendingRank, Is.EqualTo(1));
+            Assert.That(context.Store.FlushCount, Is.EqualTo(flushCount + 1));
+
+            IceCreamRaceEngine restored = context.CreateNewEngine();
+            restored.Restore();
+
+            Assert.That(restored.CollectedTokens, Is.EqualTo(restored.RequiredTokens));
+            Assert.That(restored.PendingRank, Is.EqualTo(1));
+            IceCreamRaceResultClaim claim = restored.ClaimResult();
+            Assert.That(claim.Succeeded, Is.True);
+            Assert.That(claim.Advanced, Is.True);
+            Assert.That(claim.NextRound, Is.EqualTo(2));
+            Assert.That(claim.RoadPointsAdded, Is.EqualTo(30));
+        }
+
+        [Test]
+        public void DevForceLose_PreservesTokensPersistsAndResetsRoundOnClaim()
+        {
+            TestContext context = CreateContext();
+            IceCreamRaceEngine engine = context.Engine;
+            WinCurrentRound(engine);
+            Assert.That(engine.ClaimResult().Advanced, Is.True);
+            Assert.That(engine.Round, Is.EqualTo(2));
+            Assert.That(engine.Matchmake(), Is.True);
+            Assert.That(engine.StartRace(), Is.True);
+            Assert.That(engine.AddTokens(7), Is.True);
+            int collectedTokens = engine.CollectedTokens;
+            int expectedLosingRank = Math.Min(engine.ParticipantCount, engine.RankCutoff + 1);
+            int flushCount = context.Store.FlushCount;
+
+            Assert.That(engine.DevForceLose(), Is.True);
+
+            Assert.That(engine.CollectedTokens, Is.EqualTo(collectedTokens));
+            Assert.That(engine.PendingRank, Is.EqualTo(expectedLosingRank));
+            Assert.That(engine.PendingRank, Is.GreaterThan(engine.RankCutoff));
+            Assert.That(context.Store.FlushCount, Is.EqualTo(flushCount + 1));
+
+            IceCreamRaceEngine restored = context.CreateNewEngine();
+            restored.Restore();
+
+            Assert.That(restored.CollectedTokens, Is.EqualTo(collectedTokens));
+            Assert.That(restored.PendingRank, Is.EqualTo(expectedLosingRank));
+            IceCreamRaceResultClaim claim = restored.ClaimResult();
+            Assert.That(claim.Succeeded, Is.True);
+            Assert.That(claim.Advanced, Is.False);
+            Assert.That(claim.NextRound, Is.EqualTo(1));
+            Assert.That(claim.RoadPointsAdded, Is.Zero);
+            Assert.That(restored.RoadPoints, Is.EqualTo(30));
+        }
+
+        [Test]
         public void SaveDisplayedMultiplierStep_PersistsOnlyCurrentStepWithoutExplicitFlush()
         {
             var import = new IceCreamRaceImportState(
