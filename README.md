@@ -66,11 +66,18 @@ race.EvaluateTimeout();
 ```json
 {
   "dependencies": {
-    "com.actionfit.content-core": "https://github.com/ActionFit-Editor/ContentCore.git#0.2.1",
-    "com.actionfit.icecream-race": "https://github.com/ActionFit-Editor/IceCreamRace.git#0.1.6"
+    "com.actionfit.content-core": "https://github.com/ActionFit-Editor/ContentCore.git#0.2.2",
+    "com.actionfit.icecream-race": "https://github.com/ActionFit-Editor/IceCreamRace.git#0.1.7"
   }
 }
 ```
+
+## Agent Skills
+
+- `$icecream-race-help`: 설치된 스킬 목록을 기준으로 엔진 소유권, 경기 규칙, 저장·보상 계약, 테스트와 프로젝트 통합 경계를 설명합니다.
+- `$icecream-race-audit`: Unity나 게임 상태를 실행하지 않고 소스에서 전이 flush, 탈락·순위, catalog pin, 표시 snapshot, 멱등 보상과 재시작 복구를 점검합니다.
+
+두 스킬은 Codex와 Claude에 `read-only`로 등록됩니다. Custom Package Manager가 설치 대상의 `PACKAGE_SKILLS.md`를 생성하므로 패키지 소스에는 해당 파일을 직접 추가하지 않습니다.
 
 ## 테스트
 

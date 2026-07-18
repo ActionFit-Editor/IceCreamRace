@@ -8,15 +8,22 @@ This guide is shipped with the package so an AI assistant can preserve the race 
 - Display name: ActionFit Ice Cream Race
 - Repository: `https://github.com/ActionFit-Editor/IceCreamRace.git`
 - Repository visibility: Public
-- Current package version at generation time: `0.1.6`
+- Current package version at generation time: `0.1.7`
 - Unity version: `6000.2`
-- Runtime dependency: `com.actionfit.content-core@0.2.1`
+- Runtime dependency: `com.actionfit.content-core@0.2.2`
 
 ## Purpose
 
 The package provides a project-neutral five-player elimination race based on AF_CatDetective snapshot `MCD-1000/5P_PVP@676e6b96dce415977f21121db2ace8c4aaee7fb1`. It owns deterministic race state transitions, live bot-curve ranking, CatDetective parity tuning, schema-versioned persistence, reward-road claiming, and idempotent restart recovery.
 
 It does not own project event buses, UI, Addressables, Firebase, server matchmaking, game inventory mutation, analytics, localization, or migration of existing Cat Merge Cafe keys.
+
+## Agent Skills
+
+- `Skills~/manifest.json` registers schema v2 `icecream-race-help` and `icecream-race-audit` for Codex and Claude with read-only access.
+- Help reads the generated `PACKAGE_SKILLS.md` first and explains engine ownership, integration boundaries, tests, and safety rules without executing gameplay.
+- Audit inspects source and adapters for transition flushes, elimination and rank rules, catalog pins, displayed snapshot monotonicity, durable reward ordering, and restart recovery. It captures Git state before and after and never runs Unity, race commands, persistence, or rewards.
+- Custom Package Manager owns installation and generated inventory. Do not author `PACKAGE_SKILLS.md` inside this package.
 
 ## Project Router Registration
 

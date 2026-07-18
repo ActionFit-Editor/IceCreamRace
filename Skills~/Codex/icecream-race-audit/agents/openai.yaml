@@ -1,0 +1,4 @@
+interface:
+  display_name: "Ice Cream Race Audit"
+  short_description: "Audit race state and reward recovery"
+  default_prompt: "Use $icecream-race-audit to audit Ice Cream Race state, ranking, persistence, and reward recovery without changing project state."

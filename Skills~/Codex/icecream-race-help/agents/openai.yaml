@@ -1,0 +1,4 @@
+interface:
+  display_name: "Ice Cream Race Help"
+  short_description: "Explain Ice Cream Race package contracts"
+  default_prompt: "Use $icecream-race-help to explain the Ice Cream Race package, its installed skills, tests, and safety boundaries."
