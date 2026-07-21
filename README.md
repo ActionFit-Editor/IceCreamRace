@@ -41,6 +41,7 @@ race.EvaluateTimeout();
 - 기존 게임 UI가 매칭 전 이벤트 진입 화면을 열어야 하면 `TryStartEvent`로 현재 스케줄 창만 먼저 시작합니다.
 - 화면은 `StateChanged`를 구독하고 `State`, `CurrentRank`, `GetOpponentProgress`를 읽어 표현합니다.
 - 서버 시간이나 DevTool 시간이 필요하면 `ActionFit.Time.IClock`과 calendar를 함께 주입합니다. server mode는 synchronized UTC + `TimeZoneInfo.Utc`, device mode는 device-backed UTC + `TimeZoneInfo.Local`을 사용합니다.
+- 비활성 레거시 스냅샷이 남아 있어도 새 이벤트의 활성 요일과 예상 시간은 주입된 신규 calendar로 판단합니다. 진행 중인 레거시 deadline 비교만 기존 숫자 축을 보존하며, 시작 거절은 basis나 저장 상태를 변경하지 않습니다.
 - 프로젝트 활성 요일과 kill switch는 `IIceCreamRaceSchedulePolicy`로 교체합니다. standalone 기본값은 원본의 월·화입니다.
 - 프로젝트 프로필/프레임은 `IIceCreamRaceOpponentProvider`에서 제공합니다.
 - 진행 중 이벤트의 catalog를 업데이트할 때는 `IIceCreamRaceCatalogResolver`에 이전 version/revision catalog도 등록해야 합니다. 등록하지 않은 저장값은 조용히 새 밸런스를 적용하지 않고 명시적으로 복구를 중단합니다.
@@ -72,7 +73,7 @@ race.EvaluateTimeout();
   "dependencies": {
     "com.actionfit.content-core": "https://github.com/ActionFit-Editor/ContentCore.git#0.2.3",
     "com.actionfit.time": "https://github.com/ActionFit-Editor/Time.git#1.0.4",
-    "com.actionfit.icecream-race": "https://github.com/ActionFit-Editor/IceCreamRace.git#0.2.1"
+    "com.actionfit.icecream-race": "https://github.com/ActionFit-Editor/IceCreamRace.git#0.2.2"
   }
 }
 ```

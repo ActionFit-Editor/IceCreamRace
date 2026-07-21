@@ -93,6 +93,51 @@ namespace ActionFit.IceCreamRace.Tests
         }
 
         [Test]
+        public void NewEventCalendar_DoesNotUseInactiveLegacyStateBasis()
+        {
+            TimeZoneInfo legacyCalendar = TimeZoneInfo.CreateCustomTimeZone(
+                "IceCreamRace.Tests.Legacy+09",
+                TimeSpan.FromHours(9),
+                "IceCreamRace Tests Legacy +09",
+                "IceCreamRace Tests Legacy +09");
+
+            var rejectedStore = new MemoryStateStore();
+            var rejectedClock = new ActionFit.Time.ManualClock(
+                new DateTime(2026, 7, 12, 20, 0, 0, DateTimeKind.Utc));
+            IceCreamRaceEngine rejected = CreateEngineForCalendars(
+                rejectedStore,
+                rejectedClock,
+                TimeZoneInfo.Utc,
+                legacyCalendar);
+            Assert.That(rejected.ImportStateIfEmpty(CreateEmptyLegacyImport()), Is.True);
+            int rejectedSaveCount = rejectedStore.SaveCount;
+
+            Assert.That(rejected.IsEventDay, Is.False);
+            Assert.That(rejected.ExpectedRemainingTime, Is.EqualTo(TimeSpan.Zero));
+            Assert.That(rejected.TryStartEvent(), Is.False);
+            Assert.That(rejected.State.TimeBasis, Is.EqualTo(IceCreamRaceTimeBasis.LegacyCalendarTicks));
+            Assert.That(rejectedStore.SaveCount, Is.EqualTo(rejectedSaveCount));
+
+            var acceptedStore = new MemoryStateStore();
+            var acceptedClock = new ActionFit.Time.ManualClock(
+                new DateTime(2026, 7, 14, 20, 0, 0, DateTimeKind.Utc));
+            IceCreamRaceEngine accepted = CreateEngineForCalendars(
+                acceptedStore,
+                acceptedClock,
+                TimeZoneInfo.Utc,
+                legacyCalendar);
+            Assert.That(accepted.ImportStateIfEmpty(CreateEmptyLegacyImport()), Is.True);
+
+            Assert.That(accepted.IsEventDay, Is.True);
+            Assert.That(accepted.ExpectedRemainingTime, Is.EqualTo(TimeSpan.FromHours(4)));
+            Assert.That(accepted.TryStartEvent(), Is.True);
+            Assert.That(accepted.State.TimeBasis, Is.EqualTo(IceCreamRaceTimeBasis.UtcTicks));
+            Assert.That(
+                accepted.State.EventEndUtcTicks,
+                Is.EqualTo(new DateTime(2026, 7, 15, 0, 0, 0, DateTimeKind.Utc).Ticks));
+        }
+
+        [Test]
         public void EvaluateTimeout_UsesCutoffBotDeadlineAndLiveRank()
         {
             var context = CreateContext();
@@ -797,6 +842,46 @@ namespace ActionFit.IceCreamRace.Tests
             Assert.That(engine.StartRace(), Is.True);
             Assert.That(engine.AddTokens(engine.RequiredTokens), Is.True);
             Assert.That(engine.PendingRank, Is.EqualTo(1));
+        }
+
+        private static IceCreamRaceEngine CreateEngineForCalendars(
+            MemoryStateStore store,
+            ActionFit.Time.IClock clock,
+            TimeZoneInfo calendarTimeZone,
+            TimeZoneInfo legacyCalendarTimeZone)
+        {
+            return new IceCreamRaceEngine(
+                store,
+                new MemoryRewardService(),
+                IceCreamRaceCatalog.CreateCatDetectiveParity(),
+                clock,
+                new MinimumRandom(),
+                new FakeOpponentProvider(),
+                calendarTimeZone: calendarTimeZone,
+                legacyCalendarTimeZone: legacyCalendarTimeZone);
+        }
+
+        private static IceCreamRaceImportState CreateEmptyLegacyImport()
+        {
+            return new IceCreamRaceImportState(
+                1,
+                0,
+                0,
+                0,
+                0f,
+                0,
+                Array.Empty<IceCreamRaceOpponent>(),
+                Array.Empty<int>(),
+                Array.Empty<int>(),
+                0,
+                0,
+                0,
+                false,
+                false,
+                0,
+                0,
+                false,
+                false);
         }
 
         private static IceCreamRaceCatalog CreateVariantCatalog(string version, int firstRoundTokens)

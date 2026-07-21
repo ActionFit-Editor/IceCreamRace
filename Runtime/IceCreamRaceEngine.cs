@@ -92,7 +92,7 @@ namespace ActionFit.IceCreamRace
         public bool IsEventStarted => _state.EventStarted;
         public bool PendingEnd => _state.PendingEnd;
         public bool IsAccessAllowed => _accessPolicy.IsAccessAllowed;
-        public bool IsEventDay => _schedulePolicy.IsEnabled && _schedulePolicy.IsActiveDay(CalendarNow.DayOfWeek);
+        public bool IsEventDay => IsActiveEventDay(IceCreamRaceTimeBasis.UtcTicks);
         public bool FirstPopupShown => _state.FirstPopupShown;
         public bool TutorialShown => _state.TutorialShown;
         public string RaceId => _state.RaceId;
@@ -111,9 +111,9 @@ namespace ActionFit.IceCreamRace
             {
                 TimeSpan remaining = EventRemainingTime;
                 if (remaining > TimeSpan.Zero) return remaining;
-                if (!_schedulePolicy.IsEnabled || !_schedulePolicy.IsActiveDay(CalendarNow.DayOfWeek))
-                    return TimeSpan.Zero;
-                return RemainingUntil(GetActiveWindowEndTicks());
+                return TryGetActiveWindowEndTicks(IceCreamRaceTimeBasis.UtcTicks, out long endTicks)
+                    ? RemainingUntil(endTicks, IceCreamRaceTimeBasis.UtcTicks)
+                    : TimeSpan.Zero;
             }
         }
         public float RaceElapsedSeconds => IsRaceActive
@@ -231,10 +231,15 @@ namespace ActionFit.IceCreamRace
                 return _state.EventEndUtcTicks > NowTicks;
             }
 
+            if (!TryGetActiveWindowEndTicks(IceCreamRaceTimeBasis.UtcTicks, out long endTicks))
+            {
+                return false;
+            }
+
+            PinCurrentCatalog();
             _state.MutableTimeBasis = (int)IceCreamRaceTimeBasis.UtcTicks;
             _state.MutableEventStarted = true;
-            PinCurrentCatalog();
-            _state.MutableEventEndUtcTicks = GetActiveWindowEndTicks();
+            _state.MutableEventEndUtcTicks = endTicks;
             _state.MutablePendingEnd = false;
             _state.MutableFirstPopupShown = false;
             Persist(true, true);
@@ -311,12 +316,20 @@ namespace ActionFit.IceCreamRace
                 return false;
             }
 
+            bool startsNewEvent = !_state.EventStarted || _state.EventEndUtcTicks <= NowTicks;
+            long newEventEndTicks = 0L;
+            if (startsNewEvent
+                && !TryGetActiveWindowEndTicks(IceCreamRaceTimeBasis.UtcTicks, out newEventEndTicks))
+            {
+                return false;
+            }
+
             PinCurrentCatalogIfMissing();
-            if (!_state.EventStarted || _state.EventEndUtcTicks <= NowTicks)
+            if (startsNewEvent)
             {
                 _state.MutableTimeBasis = (int)IceCreamRaceTimeBasis.UtcTicks;
                 _state.MutableEventStarted = true;
-                _state.MutableEventEndUtcTicks = GetActiveWindowEndTicks();
+                _state.MutableEventEndUtcTicks = newEventEndTicks;
                 _state.MutablePendingEnd = false;
             }
 
@@ -645,16 +658,44 @@ namespace ActionFit.IceCreamRace
             ? CalendarNow.Ticks
             : UtcNow.Ticks;
 
-        private long GetActiveWindowEndTicks()
+        private bool IsActiveEventDay(IceCreamRaceTimeBasis basis)
         {
-            DateTime calendarEnd = _schedulePolicy.GetActiveWindowEnd(CalendarNow);
-            if (_state.TimeBasis == IceCreamRaceTimeBasis.LegacyCalendarTicks)
+            DateTime calendarNow = GetCalendarNow(basis);
+            return _schedulePolicy.IsEnabled && _schedulePolicy.IsActiveDay(calendarNow.DayOfWeek);
+        }
+
+        private bool TryGetActiveWindowEndTicks(IceCreamRaceTimeBasis basis, out long endTicks)
+        {
+            endTicks = 0L;
+            DateTime calendarNow = GetCalendarNow(basis);
+            if (!_schedulePolicy.IsEnabled || !_schedulePolicy.IsActiveDay(calendarNow.DayOfWeek))
             {
-                return calendarEnd.Ticks;
+                return false;
             }
 
-            DateTime unspecifiedEnd = DateTime.SpecifyKind(calendarEnd, DateTimeKind.Unspecified);
-            return TimeZoneInfo.ConvertTimeToUtc(unspecifiedEnd, _calendarTimeZone).Ticks;
+            DateTime calendarEnd = _schedulePolicy.GetActiveWindowEnd(calendarNow);
+            long nowTicks;
+            if (basis == IceCreamRaceTimeBasis.LegacyCalendarTicks)
+            {
+                endTicks = calendarEnd.Ticks;
+                nowTicks = calendarNow.Ticks;
+            }
+            else
+            {
+                DateTime unspecifiedEnd = DateTime.SpecifyKind(calendarEnd, DateTimeKind.Unspecified);
+                endTicks = TimeZoneInfo.ConvertTimeToUtc(unspecifiedEnd, _calendarTimeZone).Ticks;
+                nowTicks = UtcNow.Ticks;
+            }
+
+            return endTicks > nowTicks;
+        }
+
+        private DateTime GetCalendarNow(IceCreamRaceTimeBasis basis)
+        {
+            TimeZoneInfo timeZone = basis == IceCreamRaceTimeBasis.LegacyCalendarTicks
+                ? _legacyCalendarTimeZone
+                : _calendarTimeZone;
+            return _clock.GetCurrentTime(timeZone).DateTime;
         }
 
         private long GetCompletionFallbackTicks()
@@ -671,7 +712,15 @@ namespace ActionFit.IceCreamRace
 
         private TimeSpan RemainingUntil(long endTicks)
         {
-            long remainingTicks = endTicks - NowTicks;
+            return RemainingUntil(endTicks, _state.TimeBasis);
+        }
+
+        private TimeSpan RemainingUntil(long endTicks, IceCreamRaceTimeBasis basis)
+        {
+            long nowTicks = basis == IceCreamRaceTimeBasis.LegacyCalendarTicks
+                ? GetCalendarNow(basis).Ticks
+                : UtcNow.Ticks;
+            long remainingTicks = endTicks - nowTicks;
             return remainingTicks > 0 ? TimeSpan.FromTicks(remainingTicks) : TimeSpan.Zero;
         }
 
@@ -694,7 +743,7 @@ namespace ActionFit.IceCreamRace
         private bool CanEnterRace()
         {
             return _schedulePolicy.IsEnabled
-                && _schedulePolicy.IsActiveDay(CalendarNow.DayOfWeek)
+                && IsEventDay
                 && _accessPolicy.IsAccessAllowed
                 && !IsEventCompleted
                 && !_state.PendingEnd;
