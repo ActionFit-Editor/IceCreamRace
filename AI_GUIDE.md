@@ -8,7 +8,7 @@ This guide is shipped with the package so an AI assistant can preserve the race 
 - Display name: ActionFit Ice Cream Race
 - Repository: `https://github.com/ActionFit-Editor/IceCreamRace.git`
 - Repository visibility: Public
-- Current package version at generation time: `0.2.0`
+- Current package version at generation time: `0.2.1`
 - Unity version: `6000.2`
 - Runtime dependencies: `com.actionfit.content-core@0.2.3` and `com.actionfit.time@1.0.4`
 
@@ -43,7 +43,7 @@ Requested router entry:
 - `ActionFit.Time.IClock`, an explicit calendar `TimeZoneInfo`, `IIceCreamRaceRandom`, and `IIceCreamRaceOpponentProvider` are the supported replacement boundaries. `IIceCreamRaceClock` remains an obsolete source-compatibility alias only.
 - New absolute deadlines use UTC ticks with schema/basis metadata. A consuming product injects synchronized UTC plus a UTC calendar in server mode, or device-backed UTC plus `TimeZoneInfo.Local` in device mode. Imported active legacy ticks retain their original numeric calendar until that event ends.
 - `SystemIceCreamRaceRandom` and `DefaultIceCreamRaceOpponentProvider` provide standalone-safe non-time defaults. Production composition must inject its clock and calendar explicitly and fail closed when required server time is unavailable.
-- `Data/CSV/` is the canonical released balance source. Generated Row/Table code and imported Table SOs remain consuming-project outputs under `Assets/_Data/_IceCreamRace/` and must be converted into package catalog models by a project adapter.
+- `Data/CSV/` is the canonical released balance source. `IceCreamRaceCatalogFactory` builds the complete standalone catalog and merge tuning directly from caller-provided CSV text without `AssetDatabase`, CSV Importer, generated Row/Table types, or project Table SOs. Empty, malformed, duplicate, or unsupported input fails closed. Generated outputs remain under `Assets/_Data/_IceCreamRace/`; verify their parity with `Assets/_Project/Content/Tests/Editor/ContentCatalogImportedSoParityTests.cs`. Machine-readable source and test evidence lives in `Documentation~/StandaloneCatalogEvidence.json`.
 - `IceCreamRaceStateSerializer` serializes the schema-versioned Unity JSON state and rejects unknown future schema versions.
 - `IContentStateStore` and `IContentRewardService` come from `com.actionfit.content-core`.
 - Ordinary token progress may remain buffered, but event/race start, result resolution, timeout/end, result claim, and both reward transaction boundaries flush an `IFlushableContentStateStore` when available.

@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "catalogFactory": "Runtime/IceCreamRaceCatalogFactory.cs",
+  "parityTest": "Tests/Editor/IceCreamRaceStandaloneCatalogParityTests.cs",
+  "csv": [
+    {
+      "path": "Data/CSV/IceCreamRace_EventSettings.csv",
+      "sha256": "255ec8e575754fd1b3dfe77e2413a5c69d7d1ed827fba2b72c0429790a205696"
+    },
+    {
+      "path": "Data/CSV/IceCreamRace_OrderReward.csv",
+      "sha256": "3f944973a5b1fec1065da50794c949e5470d1983486db21ac57fb993243c7188"
+    },
+    {
+      "path": "Data/CSV/IceCreamRace_RewardRoad.csv",
+      "sha256": "5ede8c0a6dc4b8b61282a1eb9ba999c051670b8e2792cdd8844bd3f087a0f649"
+    },
+    {
+      "path": "Data/CSV/IceCreamRace_Round.csv",
+      "sha256": "ff910186362a3634a5b2562d2cfcbe66b6ddd417d3e4345a7a62ee3acab04acc"
+    },
+    {
+      "path": "Data/CSV/IceCreamRace_Tuning.csv",
+      "sha256": "e2c2c79d0de9d79d217ae1010dfd454220d57e5dd18df3ca0cd618771737726b"
+    }
+  ]
+}

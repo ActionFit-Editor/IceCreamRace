@@ -72,10 +72,26 @@ race.EvaluateTimeout();
   "dependencies": {
     "com.actionfit.content-core": "https://github.com/ActionFit-Editor/ContentCore.git#0.2.3",
     "com.actionfit.time": "https://github.com/ActionFit-Editor/Time.git#1.0.4",
-    "com.actionfit.icecream-race": "https://github.com/ActionFit-Editor/IceCreamRace.git#0.2.0"
+    "com.actionfit.icecream-race": "https://github.com/ActionFit-Editor/IceCreamRace.git#0.2.1"
   }
 }
 ```
+
+## Canonical CSV 독립 구성
+
+`Data/CSV/`의 다섯 파일은 릴리스 밸런스 원본입니다. 각 파일의 `TextAsset.text`를 `IceCreamRaceCatalogCsvData`에 전달하고 `IceCreamRaceCatalogFactory.Create`를 호출하면 CSV Importer, 생성 Row/Table 코드와 프로젝트 Table SO 없이 `Catalog`과 머지 조정값을 얻습니다. 팩터리는 파일을 자동 탐색하거나 로드하지 않으므로 composition root가 CSV 문자열을 명시적으로 전달해야 합니다. 비어 있거나 잘못된 CSV는 예외로 즉시 차단됩니다.
+
+```csharp
+IceCreamRaceStandaloneCatalog standalone = IceCreamRaceCatalogFactory.Create(
+    new IceCreamRaceCatalogCsvData(
+        eventSettings.text,
+        orderRewards.text,
+        rewardRoad.text,
+        rounds.text,
+        tuning.text));
+```
+
+CSV Importer 생성 결과는 계속 `Assets/_Data/_IceCreamRace/`에 둘 수 있으며, 패키지 팩터리와 `_Data` SO의 동등성은 프로젝트 EditMode 테스트로 검증합니다.
 
 ## Agent Skill 안내
 
