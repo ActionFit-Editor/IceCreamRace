@@ -1,11 +1,18 @@
 using System;
 using System.Collections.Generic;
+using ActionFit.Time;
 
 namespace ActionFit.IceCreamRace
 {
-    public interface IIceCreamRaceClock
+    public enum IceCreamRaceTimeBasis
     {
-        DateTime UtcNow { get; }
+        LegacyCalendarTicks = 0,
+        UtcTicks = 1
+    }
+
+    [Obsolete("Inject ActionFit.Time.IClock into IceCreamRaceEngine. This alias remains for source compatibility.")]
+    public interface IIceCreamRaceClock : IClock
+    {
     }
 
     public interface IIceCreamRaceRandom
@@ -31,7 +38,7 @@ namespace ActionFit.IceCreamRace
     {
         bool IsEnabled { get; }
         bool IsActiveDay(DayOfWeek dayOfWeek);
-        DateTime GetActiveWindowEndUtc(DateTime utcNow);
+        DateTime GetActiveWindowEnd(DateTime calendarNow);
     }
 
     /// <summary>Resolves an immutable catalog snapshot recorded by an in-progress event.</summary>
@@ -57,13 +64,14 @@ namespace ActionFit.IceCreamRace
 
     public sealed class SystemIceCreamRaceClock : IIceCreamRaceClock
     {
-        public static SystemIceCreamRaceClock Instance { get; } = new SystemIceCreamRaceClock();
+        private readonly IClock _clock;
 
-        private SystemIceCreamRaceClock()
+        public SystemIceCreamRaceClock(IClock clock)
         {
+            _clock = clock ?? throw new ArgumentNullException(nameof(clock));
         }
 
-        public DateTime UtcNow => DateTime.UtcNow;
+        public DateTime UtcNow => _clock.UtcNow;
     }
 
     public sealed class SystemIceCreamRaceRandom : IIceCreamRaceRandom

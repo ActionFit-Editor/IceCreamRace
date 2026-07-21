@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using ActionFit.Content;
+using ActionFit.Time;
 using UnityEngine;
 
 namespace ActionFit.IceCreamRace
@@ -18,7 +19,9 @@ namespace ActionFit.IceCreamRace
         private readonly IceCreamRaceCatalog _catalog;
         private readonly IIceCreamRaceCatalogResolver _catalogResolver;
         private readonly IIceCreamRaceSchedulePolicy _schedulePolicy;
-        private readonly IIceCreamRaceClock _clock;
+        private readonly IClock _clock;
+        private readonly TimeZoneInfo _calendarTimeZone;
+        private readonly TimeZoneInfo _legacyCalendarTimeZone;
         private readonly IIceCreamRaceRandom _random;
         private readonly IIceCreamRaceOpponentProvider _opponentProvider;
         private readonly IceCreamRaceStateSerializer _serializer;
@@ -32,13 +35,15 @@ namespace ActionFit.IceCreamRace
             IContentStateStore stateStore,
             IContentRewardService rewardService,
             IceCreamRaceCatalog catalog = null,
-            IIceCreamRaceClock clock = null,
+            IClock clock = null,
             IIceCreamRaceRandom random = null,
             IIceCreamRaceOpponentProvider opponentProvider = null,
             string contentId = DefaultContentId,
             IIceCreamRaceAccessPolicy accessPolicy = null,
             IIceCreamRaceSchedulePolicy schedulePolicy = null,
-            IIceCreamRaceCatalogResolver catalogResolver = null)
+            IIceCreamRaceCatalogResolver catalogResolver = null,
+            TimeZoneInfo calendarTimeZone = null,
+            TimeZoneInfo legacyCalendarTimeZone = null)
         {
             _stateStore = stateStore ?? throw new ArgumentNullException(nameof(stateStore));
             _rewardService = rewardService ?? throw new ArgumentNullException(nameof(rewardService));
@@ -46,7 +51,14 @@ namespace ActionFit.IceCreamRace
             _catalogResolver = catalogResolver ?? new IceCreamRaceCatalogRegistry(_catalog);
             _schedulePolicy = schedulePolicy
                 ?? new FixedIceCreamRaceSchedulePolicy(_catalog.ActiveDays);
-            _clock = clock ?? SystemIceCreamRaceClock.Instance;
+            _clock = clock ?? throw new ArgumentNullException(nameof(clock));
+#pragma warning disable CS0618
+            bool usesLegacyClockAlias = clock is IIceCreamRaceClock;
+#pragma warning restore CS0618
+            _calendarTimeZone = calendarTimeZone
+                ?? (usesLegacyClockAlias ? TimeZoneInfo.Utc : throw new ArgumentNullException(nameof(calendarTimeZone)));
+            _legacyCalendarTimeZone = legacyCalendarTimeZone
+                ?? (usesLegacyClockAlias ? _calendarTimeZone : throw new ArgumentNullException(nameof(legacyCalendarTimeZone)));
             _random = random ?? new SystemIceCreamRaceRandom();
             _opponentProvider = opponentProvider ?? DefaultIceCreamRaceOpponentProvider.Instance;
             _serializer = new IceCreamRaceStateSerializer();
@@ -80,28 +92,47 @@ namespace ActionFit.IceCreamRace
         public bool IsEventStarted => _state.EventStarted;
         public bool PendingEnd => _state.PendingEnd;
         public bool IsAccessAllowed => _accessPolicy.IsAccessAllowed;
+        public bool IsEventDay => _schedulePolicy.IsEnabled && _schedulePolicy.IsActiveDay(CalendarNow.DayOfWeek);
         public bool FirstPopupShown => _state.FirstPopupShown;
         public bool TutorialShown => _state.TutorialShown;
         public string RaceId => _state.RaceId;
         public string ActiveCatalogVersion => _state.CatalogVersion;
         public string ActiveBalanceRevision => _state.BalanceRevision;
-        public bool IsEventCompleted => _state.CompletedUntilUtcTicks > UtcNow.Ticks;
+        public bool IsEventCompleted => _state.CompletedUntilUtcTicks > NowTicks;
         public bool IsEventActive => _state.EventStarted
             && _schedulePolicy.IsEnabled
             && !_state.PendingEnd
             && !IsEventCompleted
-            && _state.EventEndUtcTicks > UtcNow.Ticks;
+            && _state.EventEndUtcTicks > NowTicks;
+        public TimeSpan EventRemainingTime => RemainingUntil(_state.EventEndUtcTicks);
+        public TimeSpan ExpectedRemainingTime
+        {
+            get
+            {
+                TimeSpan remaining = EventRemainingTime;
+                if (remaining > TimeSpan.Zero) return remaining;
+                if (!_schedulePolicy.IsEnabled || !_schedulePolicy.IsActiveDay(CalendarNow.DayOfWeek))
+                    return TimeSpan.Zero;
+                return RemainingUntil(GetActiveWindowEndTicks());
+            }
+        }
         public float RaceElapsedSeconds => IsRaceActive
-            ? Mathf.Max(0f, (float)((UtcNow.Ticks - _state.MatchStartUtcTicks) / (double)TimeSpan.TicksPerSecond))
+            ? Mathf.Max(0f, (float)((NowTicks - _state.MatchStartUtcTicks) / (double)TimeSpan.TicksPerSecond))
             : 0f;
         public float RaceDeadlineSeconds => CalculateDeadlineSeconds();
 
-        public static IceCreamRaceEngine CreateDefault(string contentId = DefaultContentId)
+        public static IceCreamRaceEngine CreateDefault(
+            IClock clock,
+            TimeZoneInfo calendarTimeZone,
+            string contentId = DefaultContentId)
         {
             return new IceCreamRaceEngine(
                 new PlayerPrefsContentStateStore(),
                 new PlayerPrefsContentRewardService(),
-                contentId: contentId);
+                clock: clock ?? throw new ArgumentNullException(nameof(clock)),
+                contentId: contentId,
+                calendarTimeZone: calendarTimeZone ?? throw new ArgumentNullException(nameof(calendarTimeZone)),
+                legacyCalendarTimeZone: calendarTimeZone);
         }
 
         public IceCreamRaceState Restore()
@@ -137,6 +168,7 @@ namespace ActionFit.IceCreamRace
 
             var state = new IceCreamRaceState
             {
+                MutableTimeBasis = (int)IceCreamRaceTimeBasis.LegacyCalendarTicks,
                 MutableRound = importState.Round,
                 MutableCollectedTokens = importState.CollectedTokens,
                 MutablePrevDisplayedTokens = importState.PrevDisplayedTokens,
@@ -196,12 +228,13 @@ namespace ActionFit.IceCreamRace
 
             if (_state.EventStarted)
             {
-                return _state.EventEndUtcTicks > UtcNow.Ticks;
+                return _state.EventEndUtcTicks > NowTicks;
             }
 
+            _state.MutableTimeBasis = (int)IceCreamRaceTimeBasis.UtcTicks;
             _state.MutableEventStarted = true;
             PinCurrentCatalog();
-            _state.MutableEventEndUtcTicks = _schedulePolicy.GetActiveWindowEndUtc(UtcNow).Ticks;
+            _state.MutableEventEndUtcTicks = GetActiveWindowEndTicks();
             _state.MutablePendingEnd = false;
             _state.MutableFirstPopupShown = false;
             Persist(true, true);
@@ -279,10 +312,11 @@ namespace ActionFit.IceCreamRace
             }
 
             PinCurrentCatalogIfMissing();
-            if (!_state.EventStarted || _state.EventEndUtcTicks <= UtcNow.Ticks)
+            if (!_state.EventStarted || _state.EventEndUtcTicks <= NowTicks)
             {
+                _state.MutableTimeBasis = (int)IceCreamRaceTimeBasis.UtcTicks;
                 _state.MutableEventStarted = true;
-                _state.MutableEventEndUtcTicks = _schedulePolicy.GetActiveWindowEndUtc(UtcNow).Ticks;
+                _state.MutableEventEndUtcTicks = GetActiveWindowEndTicks();
                 _state.MutablePendingEnd = false;
             }
 
@@ -300,7 +334,7 @@ namespace ActionFit.IceCreamRace
             _state.MutablePrevDisplayedTokens = 0;
             _state.MutablePrevDisplayedElapsedSeconds = 0f;
             _state.MutableBotFinishSeconds = finishSeconds;
-            _state.MutableMatchStartUtcTicks = UtcNow.Ticks;
+            _state.MutableMatchStartUtcTicks = NowTicks;
             _state.MutableRaceId = Guid.NewGuid().ToString("N");
             Persist(true, true);
             return true;
@@ -443,7 +477,7 @@ namespace ActionFit.IceCreamRace
             }
 
             long eventEndUtcTicks = _state.EventEndUtcTicks;
-            if (eventEndUtcTicks > UtcNow.Ticks)
+            if (eventEndUtcTicks > NowTicks)
             {
                 _state.MutableCompletedUntilUtcTicks = Math.Max(
                     _state.CompletedUntilUtcTicks,
@@ -594,11 +628,51 @@ namespace ActionFit.IceCreamRace
                 DateTime utcNow = _clock.UtcNow;
                 if (utcNow.Kind != DateTimeKind.Utc)
                 {
-                    throw new InvalidOperationException("IIceCreamRaceClock.UtcNow must have DateTimeKind.Utc.");
+                    throw new InvalidOperationException("IClock.UtcNow must have DateTimeKind.Utc.");
                 }
 
                 return utcNow;
             }
+        }
+
+        private DateTime CalendarNow => _clock.GetCurrentTime(ActiveCalendarTimeZone).DateTime;
+
+        private TimeZoneInfo ActiveCalendarTimeZone => _state.TimeBasis == IceCreamRaceTimeBasis.LegacyCalendarTicks
+            ? _legacyCalendarTimeZone
+            : _calendarTimeZone;
+
+        private long NowTicks => _state.TimeBasis == IceCreamRaceTimeBasis.LegacyCalendarTicks
+            ? CalendarNow.Ticks
+            : UtcNow.Ticks;
+
+        private long GetActiveWindowEndTicks()
+        {
+            DateTime calendarEnd = _schedulePolicy.GetActiveWindowEnd(CalendarNow);
+            if (_state.TimeBasis == IceCreamRaceTimeBasis.LegacyCalendarTicks)
+            {
+                return calendarEnd.Ticks;
+            }
+
+            DateTime unspecifiedEnd = DateTime.SpecifyKind(calendarEnd, DateTimeKind.Unspecified);
+            return TimeZoneInfo.ConvertTimeToUtc(unspecifiedEnd, _calendarTimeZone).Ticks;
+        }
+
+        private long GetCompletionFallbackTicks()
+        {
+            DateTime calendarEnd = CalendarNow.Date.AddDays(7);
+            if (_state.TimeBasis == IceCreamRaceTimeBasis.LegacyCalendarTicks)
+            {
+                return calendarEnd.Ticks;
+            }
+
+            DateTime unspecifiedEnd = DateTime.SpecifyKind(calendarEnd, DateTimeKind.Unspecified);
+            return TimeZoneInfo.ConvertTimeToUtc(unspecifiedEnd, _calendarTimeZone).Ticks;
+        }
+
+        private TimeSpan RemainingUntil(long endTicks)
+        {
+            long remainingTicks = endTicks - NowTicks;
+            return remainingTicks > 0 ? TimeSpan.FromTicks(remainingTicks) : TimeSpan.Zero;
         }
 
         private IceCreamRaceCatalog EventCatalog
@@ -620,7 +694,7 @@ namespace ActionFit.IceCreamRace
         private bool CanEnterRace()
         {
             return _schedulePolicy.IsEnabled
-                && _schedulePolicy.IsActiveDay(UtcNow.DayOfWeek)
+                && _schedulePolicy.IsActiveDay(CalendarNow.DayOfWeek)
                 && _accessPolicy.IsAccessAllowed
                 && !IsEventCompleted
                 && !_state.PendingEnd;
@@ -736,7 +810,7 @@ namespace ActionFit.IceCreamRace
                 return changed;
             }
 
-            if (!_state.EventStarted || _state.EventEndUtcTicks > UtcNow.Ticks || _state.PendingEnd)
+            if (!_state.EventStarted || _state.EventEndUtcTicks > NowTicks || _state.PendingEnd)
             {
                 return changed;
             }
@@ -840,9 +914,9 @@ namespace ActionFit.IceCreamRace
             bool completed = _state.ClaimedRoadPoints >= EventCatalog.FinalRoadPoints;
             if (completed)
             {
-                long completedUntil = _state.EventEndUtcTicks > UtcNow.Ticks
+                long completedUntil = _state.EventEndUtcTicks > NowTicks
                     ? _state.EventEndUtcTicks
-                    : UtcNow.Date.AddDays(7).Ticks;
+                    : GetCompletionFallbackTicks();
                 ClearEventProgress();
                 _state.MutableCompletedUntilUtcTicks = completedUntil;
             }

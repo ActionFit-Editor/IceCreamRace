@@ -122,29 +122,24 @@ namespace ActionFit.IceCreamRace
             return _activeDays.Contains(dayOfWeek);
         }
 
-        public DateTime GetActiveWindowEndUtc(DateTime utcNow)
+        public DateTime GetActiveWindowEnd(DateTime calendarNow)
         {
-            if (utcNow.Kind != DateTimeKind.Utc)
-            {
-                throw new ArgumentException("Schedule time must have DateTimeKind.Utc.", nameof(utcNow));
-            }
-
-            if (!IsEnabled || !IsActiveDay(utcNow.DayOfWeek))
+            if (!IsEnabled || !IsActiveDay(calendarNow.DayOfWeek))
             {
                 throw new InvalidOperationException("The Ice Cream Race schedule is not active.");
             }
 
-            DateTime date = utcNow.Date;
+            DateTime date = calendarNow.Date;
             for (int dayOffset = 1; dayOffset <= 7; dayOffset++)
             {
                 DateTime candidate = date.AddDays(dayOffset);
                 if (!IsActiveDay(candidate.DayOfWeek))
                 {
-                    return DateTime.SpecifyKind(candidate, DateTimeKind.Utc);
+                    return DateTime.SpecifyKind(candidate, DateTimeKind.Unspecified);
                 }
             }
 
-            return DateTime.SpecifyKind(date.AddDays(7), DateTimeKind.Utc);
+            return DateTime.SpecifyKind(date.AddDays(7), DateTimeKind.Unspecified);
         }
     }
 

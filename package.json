@@ -1,6 +1,6 @@
 {
   "name": "com.actionfit.icecream-race",
-  "version": "0.1.10",
+  "version": "0.2.0",
   "displayName": "ActionFit Ice Cream Race",
   "description": "Reusable five-player elimination race with CatDetective parity tuning, durable state, and idempotent reward recovery.",
   "unity": "6000.2",
@@ -8,6 +8,7 @@
     "name": "ActionFit"
   },
   "dependencies": {
-    "com.actionfit.content-core": "0.2.3"
+    "com.actionfit.content-core": "0.2.3",
+    "com.actionfit.time": "1.0.4"
   }
 }

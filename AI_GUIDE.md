@@ -8,9 +8,9 @@ This guide is shipped with the package so an AI assistant can preserve the race 
 - Display name: ActionFit Ice Cream Race
 - Repository: `https://github.com/ActionFit-Editor/IceCreamRace.git`
 - Repository visibility: Public
-- Current package version at generation time: `0.1.10`
+- Current package version at generation time: `0.2.0`
 - Unity version: `6000.2`
-- Runtime dependency: `com.actionfit.content-core@0.2.2`
+- Runtime dependencies: `com.actionfit.content-core@0.2.3` and `com.actionfit.time@1.0.4`
 
 ## Purpose
 
@@ -40,8 +40,10 @@ Requested router entry:
 - `IceCreamRaceCatalog.CreateCatDetectiveParity()` owns the source commit's Monday/Tuesday schedule, four round rows, order and merge tuning, twenty reward-road milestones, and four monotonic progress curves.
 - `IIceCreamRaceSchedulePolicy` replaces active days without copying or intersecting the balance catalog; an empty policy is the explicit kill switch.
 - `IIceCreamRaceCatalogResolver` must resolve the recorded catalog version/revision for an in-progress event. Unknown snapshots fail explicitly instead of silently switching balance.
-- `IIceCreamRaceClock`, `IIceCreamRaceRandom`, and `IIceCreamRaceOpponentProvider` are the supported replacement boundaries.
-- `SystemIceCreamRaceClock`, `SystemIceCreamRaceRandom`, and `DefaultIceCreamRaceOpponentProvider` provide a runnable local default.
+- `ActionFit.Time.IClock`, an explicit calendar `TimeZoneInfo`, `IIceCreamRaceRandom`, and `IIceCreamRaceOpponentProvider` are the supported replacement boundaries. `IIceCreamRaceClock` remains an obsolete source-compatibility alias only.
+- New absolute deadlines use UTC ticks with schema/basis metadata. A consuming product injects synchronized UTC plus a UTC calendar in server mode, or device-backed UTC plus `TimeZoneInfo.Local` in device mode. Imported active legacy ticks retain their original numeric calendar until that event ends.
+- `SystemIceCreamRaceRandom` and `DefaultIceCreamRaceOpponentProvider` provide standalone-safe non-time defaults. Production composition must inject its clock and calendar explicitly and fail closed when required server time is unavailable.
+- `Data/CSV/` is the canonical released balance source. Generated Row/Table code and imported Table SOs remain consuming-project outputs under `Assets/_Data/_IceCreamRace/` and must be converted into package catalog models by a project adapter.
 - `IceCreamRaceStateSerializer` serializes the schema-versioned Unity JSON state and rejects unknown future schema versions.
 - `IContentStateStore` and `IContentRewardService` come from `com.actionfit.content-core`.
 - Ordinary token progress may remain buffered, but event/race start, result resolution, timeout/end, result claim, and both reward transaction boundaries flush an `IFlushableContentStateStore` when available.
@@ -86,7 +88,7 @@ Check `IsRewardServiceAvailable` before exposing a claim action. With no claimab
 - Route developer controls through the engine commands and let the normal `StateChanged`, pending-result presentation, and `ClaimResult` flow continue. Do not edit serialized state JSON from a project DevTool.
 - Replace local PlayerPrefs implementations with project adapters by constructor injection, without changing engine logic.
 - Keep animation hooks, prefab selection, sound, localization, and analytics in a presentation or project package.
-- Do not copy CatDetective image, audio, Spine, or other licensed assets into this public package without a separate redistribution review.
+- Original production presentation assets belong only in the separately reviewed `com.actionfit.icecream-race.ui` package. Do not place them in this engine package.
 
 ## Testing
 

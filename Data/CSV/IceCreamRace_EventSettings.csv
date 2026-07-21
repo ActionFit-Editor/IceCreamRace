@@ -1,0 +1,4 @@
+﻿아이스크림 레이스 이벤트가 어떤 요일에 활성화되는지 정의하는 시트입니다. 요일 플래그 enum을 통해 이벤트 노출과 진입 가능 요일을 제어합니다.
+이벤트가 열리는 요일
+ActiveDays(enum:DaysOfWeek)[flags][preserve]
+Tuesday;Wednesday

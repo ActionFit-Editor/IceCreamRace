@@ -181,7 +181,8 @@ namespace ActionFit.IceCreamRace.Tests
                 "\"_claimedRoadPoints\":99,\"_catalogVersion\":\"cat\"," +
                 "\"_balanceRevision\":\"balance\"}");
 
-            Assert.That(legacy.SchemaVersion, Is.EqualTo(1));
+            Assert.That(legacy.SchemaVersion, Is.EqualTo(IceCreamRaceStateSerializer.CurrentSchemaVersion));
+            Assert.That(legacy.TimeBasis, Is.EqualTo(IceCreamRaceTimeBasis.LegacyCalendarTicks));
             Assert.That(legacy.Round, Is.EqualTo(2));
             Assert.That(legacy.ClaimedRoadPoints, Is.EqualTo(12));
             Assert.Throws<FormatException>(() => serializer.Deserialize("{}"));

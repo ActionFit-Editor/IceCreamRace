@@ -8,6 +8,7 @@ namespace ActionFit.IceCreamRace
     public sealed class IceCreamRaceState
     {
         [SerializeField] private int _schemaVersion = IceCreamRaceStateSerializer.CurrentSchemaVersion;
+        [SerializeField] private int _timeBasis = (int)IceCreamRaceTimeBasis.UtcTicks;
         [SerializeField] private int _round = 1;
         [SerializeField] private int _collectedTokens;
         [SerializeField] private int _prevDisplayedTokens;
@@ -34,6 +35,7 @@ namespace ActionFit.IceCreamRace
         [SerializeField] private List<IceCreamRaceRewardState> _pendingRewards = new List<IceCreamRaceRewardState>();
 
         public int SchemaVersion => _schemaVersion;
+        public IceCreamRaceTimeBasis TimeBasis => (IceCreamRaceTimeBasis)_timeBasis;
         public int Round => _round;
         public int CollectedTokens => _collectedTokens;
         public int PrevDisplayedTokens => _prevDisplayedTokens;
@@ -61,6 +63,7 @@ namespace ActionFit.IceCreamRace
         public bool HasPendingRewardTransaction => !string.IsNullOrEmpty(PendingRewardTransactionId);
 
         internal int MutableSchemaVersion { get => _schemaVersion; set => _schemaVersion = value; }
+        internal int MutableTimeBasis { get => _timeBasis; set => _timeBasis = value; }
         internal int MutableRound { get => _round; set => _round = value; }
         internal int MutableCollectedTokens { get => _collectedTokens; set => _collectedTokens = value; }
         internal int MutablePrevDisplayedTokens { get => _prevDisplayedTokens; set => _prevDisplayedTokens = value; }

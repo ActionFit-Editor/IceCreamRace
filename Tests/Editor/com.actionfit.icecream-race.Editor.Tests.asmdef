@@ -3,7 +3,8 @@
   "rootNamespace": "ActionFit.IceCreamRace.Tests",
   "references": [
     "com.actionfit.icecream-race",
-    "com.actionfit.content-core"
+    "com.actionfit.content-core",
+    "com.actionfit.time"
   ],
   "includePlatforms": [
     "Editor"

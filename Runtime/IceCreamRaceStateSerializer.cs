@@ -6,13 +6,19 @@ namespace ActionFit.IceCreamRace
 {
     public sealed class IceCreamRaceStateSerializer
     {
-        public const int CurrentSchemaVersion = 1;
+        public const int CurrentSchemaVersion = 2;
 
         public string Serialize(IceCreamRaceState state)
         {
             if (state == null)
             {
                 throw new ArgumentNullException(nameof(state));
+            }
+
+            int sourceSchemaVersion = state.SchemaVersion;
+            if (sourceSchemaVersion <= 1)
+            {
+                state.MutableTimeBasis = (int)IceCreamRaceTimeBasis.LegacyCalendarTicks;
             }
 
             Normalize(state);
@@ -52,6 +58,12 @@ namespace ActionFit.IceCreamRace
                 throw new NotSupportedException($"Ice Cream Race state schema {state.SchemaVersion} is newer than supported schema {CurrentSchemaVersion}.");
             }
 
+            int sourceSchemaVersion = state.SchemaVersion;
+            if (sourceSchemaVersion <= 1)
+            {
+                state.MutableTimeBasis = (int)IceCreamRaceTimeBasis.LegacyCalendarTicks;
+            }
+
             Normalize(state);
             Validate(state);
             return state;
@@ -65,6 +77,10 @@ namespace ActionFit.IceCreamRace
         internal static void Normalize(IceCreamRaceState state)
         {
             state.MutableSchemaVersion = CurrentSchemaVersion;
+            if (!Enum.IsDefined(typeof(IceCreamRaceTimeBasis), state.MutableTimeBasis))
+            {
+                throw new FormatException("Ice Cream Race time basis is invalid.");
+            }
             state.MutableRound = Math.Max(1, state.MutableRound);
             state.MutableCollectedTokens = Math.Max(0, state.MutableCollectedTokens);
             state.MutablePrevDisplayedTokens = Math.Max(0, state.MutablePrevDisplayedTokens);
