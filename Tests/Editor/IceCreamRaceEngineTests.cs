@@ -138,6 +138,40 @@ namespace ActionFit.IceCreamRace.Tests
         }
 
         [Test]
+        public void DeviceLocalCalendar_WithNineHourBoundary_ChangesDayAtLocalNine()
+        {
+            TimeZoneInfo deviceLocalTimeZone = TimeZoneInfo.CreateCustomTimeZone(
+                "IceCreamRace.Tests.DeviceLocal.Boundary+09",
+                TimeSpan.FromHours(9d),
+                "Ice Cream Race Tests Device Local Boundary +09",
+                "Ice Cream Race Tests Device Local Boundary +09");
+            TimeSpan boundaryOffset = TimeSpan.FromHours(9d);
+            IceCreamRaceEngine beforeBoundary = CreateEngineForCalendars(
+                new MemoryStateStore(),
+                new ActionFit.Time.ManualClock(
+                    new DateTime(2026, 7, 12, 23, 59, 0, DateTimeKind.Utc)),
+                deviceLocalTimeZone,
+                TimeZoneInfo.Utc,
+                boundaryOffset);
+            IceCreamRaceEngine atBoundary = CreateEngineForCalendars(
+                new MemoryStateStore(),
+                new ActionFit.Time.ManualClock(
+                    new DateTime(2026, 7, 13, 0, 0, 0, DateTimeKind.Utc)),
+                deviceLocalTimeZone,
+                TimeZoneInfo.Utc,
+                boundaryOffset);
+
+            Assert.That(beforeBoundary.IsEventDay, Is.False);
+            Assert.That(beforeBoundary.TryStartEvent(), Is.False);
+            Assert.That(atBoundary.IsEventDay, Is.True);
+            Assert.That(atBoundary.TryStartEvent(), Is.True);
+            Assert.That(
+                atBoundary.State.EventEndUtcTicks,
+                Is.EqualTo(new DateTime(2026, 7, 15, 0, 0, 0, DateTimeKind.Utc).Ticks));
+            Assert.That(atBoundary.EventRemainingTime, Is.EqualTo(TimeSpan.FromHours(48)));
+        }
+
+        [Test]
         public void EvaluateTimeout_UsesCutoffBotDeadlineAndLiveRank()
         {
             var context = CreateContext();
@@ -848,7 +882,8 @@ namespace ActionFit.IceCreamRace.Tests
             MemoryStateStore store,
             ActionFit.Time.IClock clock,
             TimeZoneInfo calendarTimeZone,
-            TimeZoneInfo legacyCalendarTimeZone)
+            TimeZoneInfo legacyCalendarTimeZone,
+            TimeSpan? calendarDayBoundaryOffset = null)
         {
             return new IceCreamRaceEngine(
                 store,
@@ -857,8 +892,13 @@ namespace ActionFit.IceCreamRace.Tests
                 clock,
                 new MinimumRandom(),
                 new FakeOpponentProvider(),
-                calendarTimeZone: calendarTimeZone,
-                legacyCalendarTimeZone: legacyCalendarTimeZone);
+                IceCreamRaceEngine.DefaultContentId,
+                null,
+                null,
+                null,
+                calendarTimeZone,
+                legacyCalendarTimeZone,
+                calendarDayBoundaryOffset ?? TimeSpan.Zero);
         }
 
         private static IceCreamRaceImportState CreateEmptyLegacyImport()

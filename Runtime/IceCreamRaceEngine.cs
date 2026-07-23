@@ -21,6 +21,7 @@ namespace ActionFit.IceCreamRace
         private readonly IIceCreamRaceSchedulePolicy _schedulePolicy;
         private readonly IClock _clock;
         private readonly TimeZoneInfo _calendarTimeZone;
+        private readonly TimeSpan _calendarDayBoundaryOffset;
         private readonly TimeZoneInfo _legacyCalendarTimeZone;
         private readonly IIceCreamRaceRandom _random;
         private readonly IIceCreamRaceOpponentProvider _opponentProvider;
@@ -44,6 +45,37 @@ namespace ActionFit.IceCreamRace
             IIceCreamRaceCatalogResolver catalogResolver = null,
             TimeZoneInfo calendarTimeZone = null,
             TimeZoneInfo legacyCalendarTimeZone = null)
+            : this(
+                stateStore,
+                rewardService,
+                catalog,
+                clock,
+                random,
+                opponentProvider,
+                contentId,
+                accessPolicy,
+                schedulePolicy,
+                catalogResolver,
+                calendarTimeZone,
+                legacyCalendarTimeZone,
+                TimeSpan.Zero)
+        {
+        }
+
+        public IceCreamRaceEngine(
+            IContentStateStore stateStore,
+            IContentRewardService rewardService,
+            IceCreamRaceCatalog catalog,
+            IClock clock,
+            IIceCreamRaceRandom random,
+            IIceCreamRaceOpponentProvider opponentProvider,
+            string contentId,
+            IIceCreamRaceAccessPolicy accessPolicy,
+            IIceCreamRaceSchedulePolicy schedulePolicy,
+            IIceCreamRaceCatalogResolver catalogResolver,
+            TimeZoneInfo calendarTimeZone,
+            TimeZoneInfo legacyCalendarTimeZone,
+            TimeSpan calendarDayBoundaryOffset)
         {
             _stateStore = stateStore ?? throw new ArgumentNullException(nameof(stateStore));
             _rewardService = rewardService ?? throw new ArgumentNullException(nameof(rewardService));
@@ -57,6 +89,7 @@ namespace ActionFit.IceCreamRace
 #pragma warning restore CS0618
             _calendarTimeZone = calendarTimeZone
                 ?? (usesLegacyClockAlias ? TimeZoneInfo.Utc : throw new ArgumentNullException(nameof(calendarTimeZone)));
+            _calendarDayBoundaryOffset = ValidateCalendarDayBoundaryOffset(calendarDayBoundaryOffset);
             _legacyCalendarTimeZone = legacyCalendarTimeZone
                 ?? (usesLegacyClockAlias ? _calendarTimeZone : throw new ArgumentNullException(nameof(legacyCalendarTimeZone)));
             _random = random ?? new SystemIceCreamRaceRandom();
@@ -648,11 +681,7 @@ namespace ActionFit.IceCreamRace
             }
         }
 
-        private DateTime CalendarNow => _clock.GetCurrentTime(ActiveCalendarTimeZone).DateTime;
-
-        private TimeZoneInfo ActiveCalendarTimeZone => _state.TimeBasis == IceCreamRaceTimeBasis.LegacyCalendarTicks
-            ? _legacyCalendarTimeZone
-            : _calendarTimeZone;
+        private DateTime CalendarNow => GetCalendarNow(_state.TimeBasis);
 
         private long NowTicks => _state.TimeBasis == IceCreamRaceTimeBasis.LegacyCalendarTicks
             ? CalendarNow.Ticks
@@ -682,7 +711,8 @@ namespace ActionFit.IceCreamRace
             }
             else
             {
-                DateTime unspecifiedEnd = DateTime.SpecifyKind(calendarEnd, DateTimeKind.Unspecified);
+                DateTime actualBoundaryTime = calendarEnd.Add(_calendarDayBoundaryOffset);
+                DateTime unspecifiedEnd = ResolveValidCalendarTime(actualBoundaryTime);
                 endTicks = TimeZoneInfo.ConvertTimeToUtc(unspecifiedEnd, _calendarTimeZone).Ticks;
                 nowTicks = UtcNow.Ticks;
             }
@@ -695,7 +725,10 @@ namespace ActionFit.IceCreamRace
             TimeZoneInfo timeZone = basis == IceCreamRaceTimeBasis.LegacyCalendarTicks
                 ? _legacyCalendarTimeZone
                 : _calendarTimeZone;
-            return _clock.GetCurrentTime(timeZone).DateTime;
+            DateTime calendarNow = _clock.GetCurrentTime(timeZone).DateTime;
+            return basis == IceCreamRaceTimeBasis.LegacyCalendarTicks
+                ? calendarNow
+                : calendarNow.Subtract(_calendarDayBoundaryOffset);
         }
 
         private long GetCompletionFallbackTicks()
@@ -706,8 +739,32 @@ namespace ActionFit.IceCreamRace
                 return calendarEnd.Ticks;
             }
 
-            DateTime unspecifiedEnd = DateTime.SpecifyKind(calendarEnd, DateTimeKind.Unspecified);
+            DateTime actualBoundaryTime = calendarEnd.Add(_calendarDayBoundaryOffset);
+            DateTime unspecifiedEnd = ResolveValidCalendarTime(actualBoundaryTime);
             return TimeZoneInfo.ConvertTimeToUtc(unspecifiedEnd, _calendarTimeZone).Ticks;
+        }
+
+        private DateTime ResolveValidCalendarTime(DateTime calendarTime)
+        {
+            DateTime unspecified = DateTime.SpecifyKind(calendarTime, DateTimeKind.Unspecified);
+            const int maxAdvanceMinutes = 48 * 60;
+            for (int minute = 0; minute <= maxAdvanceMinutes; minute++)
+            {
+                if (!_calendarTimeZone.IsInvalidTime(unspecified)) return unspecified;
+                unspecified = unspecified.AddMinutes(1);
+            }
+
+            throw new InvalidOperationException("Unable to resolve a valid calendar boundary within 48 hours.");
+        }
+
+        private static TimeSpan ValidateCalendarDayBoundaryOffset(TimeSpan offset)
+        {
+            if (offset < TimeSpan.Zero || offset >= TimeSpan.FromDays(1))
+                throw new ArgumentOutOfRangeException(
+                    nameof(offset),
+                    offset,
+                    "Calendar day boundary offset must be at least zero and less than 24 hours.");
+            return offset;
         }
 
         private TimeSpan RemainingUntil(long endTicks)

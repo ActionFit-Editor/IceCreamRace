@@ -8,7 +8,7 @@ This guide is shipped with the package so an AI assistant can preserve the race 
 - Display name: ActionFit Ice Cream Race
 - Repository: `https://github.com/ActionFit-Editor/IceCreamRace.git`
 - Repository visibility: Public
-- Current package version at generation time: `0.2.2`
+- Current package version at generation time: `0.2.3`
 - Unity version: `6000.2`
 - Runtime dependencies: `com.actionfit.content-core@0.2.3` and `com.actionfit.time@1.0.4`
 
@@ -40,9 +40,9 @@ Requested router entry:
 - `IceCreamRaceCatalog.CreateCatDetectiveParity()` owns the source commit's Monday/Tuesday schedule, four round rows, order and merge tuning, twenty reward-road milestones, and four monotonic progress curves.
 - `IIceCreamRaceSchedulePolicy` replaces active days without copying or intersecting the balance catalog; an empty policy is the explicit kill switch.
 - `IIceCreamRaceCatalogResolver` must resolve the recorded catalog version/revision for an in-progress event. Unknown snapshots fail explicitly instead of silently switching balance.
-- `ActionFit.Time.IClock`, an explicit calendar `TimeZoneInfo`, `IIceCreamRaceRandom`, and `IIceCreamRaceOpponentProvider` are the supported replacement boundaries. `IIceCreamRaceClock` remains an obsolete source-compatibility alias only.
-- New absolute deadlines use UTC ticks with schema/basis metadata. A consuming product injects synchronized UTC plus a UTC calendar in server mode, or device-backed UTC plus `TimeZoneInfo.Local` in device mode. Imported active legacy ticks retain their original numeric calendar until that event ends.
-- New-event availability, expected duration, and window end always use the injected new-event calendar even when an inactive imported snapshot still records `LegacyCalendarTicks`. A rejected start preserves that basis and does not write state.
+- `ActionFit.Time.IClock`, an explicit calendar `TimeZoneInfo`, optional `calendarDayBoundaryOffset`, `IIceCreamRaceRandom`, and `IIceCreamRaceOpponentProvider` are the supported replacement boundaries. Clock source and calendar policy are independent. `IIceCreamRaceClock` remains an obsolete source-compatibility alias only.
+- New absolute deadlines use UTC ticks with schema/basis metadata. A positive boundary offset below 24 hours moves logical midnight later by subtracting it for date evaluation and adding it before UTC conversion. Imported active legacy ticks retain their original numeric calendar and never inherit the offset.
+- New-event availability, expected duration, and window end always use the injected new-event calendar and boundary even when an inactive imported snapshot still records `LegacyCalendarTicks`. Existing constructors use zero offset. A rejected start preserves that basis and does not write state.
 - `SystemIceCreamRaceRandom` and `DefaultIceCreamRaceOpponentProvider` provide standalone-safe non-time defaults. Production composition must inject its clock and calendar explicitly and fail closed when required server time is unavailable.
 - `Data/CSV/` is the canonical released balance source. `IceCreamRaceCatalogFactory` builds the complete standalone catalog and merge tuning directly from caller-provided CSV text without `AssetDatabase`, CSV Importer, generated Row/Table types, or project Table SOs. Empty, malformed, duplicate, or unsupported input fails closed. Generated outputs remain under `Assets/_Data/_IceCreamRace/`; verify their parity with `Assets/_Project/Content/Tests/Editor/ContentCatalogImportedSoParityTests.cs`. Machine-readable source and test evidence lives in `Documentation~/StandaloneCatalogEvidence.json`.
 - `IceCreamRaceStateSerializer` serializes the schema-versioned Unity JSON state and rejects unknown future schema versions.
