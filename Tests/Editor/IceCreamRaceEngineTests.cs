@@ -172,6 +172,62 @@ namespace ActionFit.IceCreamRace.Tests
         }
 
         [Test]
+        public void UtcCalendar_WithNegativeNineBoundary_ChangesDayAtUtcFifteen()
+        {
+            TimeSpan boundaryOffset = TimeSpan.FromHours(-9d);
+            IceCreamRaceEngine beforeBoundary = CreateEngineForCalendars(
+                new MemoryStateStore(),
+                new ActionFit.Time.ManualClock(
+                    new DateTime(2026, 7, 12, 14, 59, 0, DateTimeKind.Utc)),
+                TimeZoneInfo.Utc,
+                TimeZoneInfo.Utc,
+                boundaryOffset);
+            IceCreamRaceEngine atBoundary = CreateEngineForCalendars(
+                new MemoryStateStore(),
+                new ActionFit.Time.ManualClock(
+                    new DateTime(2026, 7, 12, 15, 0, 0, DateTimeKind.Utc)),
+                TimeZoneInfo.Utc,
+                TimeZoneInfo.Utc,
+                boundaryOffset);
+
+            Assert.That(beforeBoundary.IsEventDay, Is.False);
+            Assert.That(beforeBoundary.TryStartEvent(), Is.False);
+            Assert.That(atBoundary.IsEventDay, Is.True);
+            Assert.That(atBoundary.TryStartEvent(), Is.True);
+            Assert.That(
+                atBoundary.State.EventEndUtcTicks,
+                Is.EqualTo(new DateTime(2026, 7, 14, 15, 0, 0, DateTimeKind.Utc).Ticks));
+            Assert.That(atBoundary.EventRemainingTime, Is.EqualTo(TimeSpan.FromHours(48)));
+        }
+
+        [Test]
+        public void ConfigureCalendar_RuntimeZoneChangeUsesNewPolicyForNewEvent()
+        {
+            TimeZoneInfo positiveNine = TimeZoneInfo.CreateCustomTimeZone(
+                "IceCreamRace.Tests.Runtime.Positive09",
+                TimeSpan.FromHours(9),
+                "Ice Cream Race Tests Runtime Positive 09",
+                "Ice Cream Race Tests Runtime Positive 09");
+            IceCreamRaceEngine engine = CreateEngineForCalendars(
+                new MemoryStateStore(),
+                new ActionFit.Time.ManualClock(
+                    new DateTime(2026, 7, 12, 20, 0, 0, DateTimeKind.Utc)),
+                TimeZoneInfo.Utc,
+                TimeZoneInfo.Utc,
+                TimeSpan.Zero);
+
+            Assert.That(engine.IsEventDay, Is.False);
+
+            engine.ConfigureCalendar(positiveNine, TimeSpan.Zero);
+
+            Assert.That(engine.IsEventDay, Is.True);
+            Assert.That(engine.TryStartEvent(), Is.True);
+            long activeDeadline = engine.State.EventEndUtcTicks;
+            engine.ConfigureCalendar(TimeZoneInfo.Utc, TimeSpan.FromHours(-9));
+            Assert.That(engine.State.EventEndUtcTicks, Is.EqualTo(activeDeadline));
+        }
+
+        [Test]
         public void EvaluateTimeout_UsesCutoffBotDeadlineAndLiveRank()
         {
             var context = CreateContext();

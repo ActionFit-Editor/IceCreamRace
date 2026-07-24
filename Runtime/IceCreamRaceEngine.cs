@@ -20,8 +20,8 @@ namespace ActionFit.IceCreamRace
         private readonly IIceCreamRaceCatalogResolver _catalogResolver;
         private readonly IIceCreamRaceSchedulePolicy _schedulePolicy;
         private readonly IClock _clock;
-        private readonly TimeZoneInfo _calendarTimeZone;
-        private readonly TimeSpan _calendarDayBoundaryOffset;
+        private TimeZoneInfo _calendarTimeZone;
+        private TimeSpan _calendarDayBoundaryOffset;
         private readonly TimeZoneInfo _legacyCalendarTimeZone;
         private readonly IIceCreamRaceRandom _random;
         private readonly IIceCreamRaceOpponentProvider _opponentProvider;
@@ -102,6 +102,21 @@ namespace ActionFit.IceCreamRace
         }
 
         public event Action<IceCreamRaceState> StateChanged;
+
+        /// <summary>
+        /// Replaces the new-event calendar policy without changing active deadline ticks or basis.
+        /// </summary>
+        public void ConfigureCalendar(
+            TimeZoneInfo calendarTimeZone,
+            TimeSpan calendarDayBoundaryOffset)
+        {
+            TimeZoneInfo selectedTimeZone = calendarTimeZone
+                                            ?? throw new ArgumentNullException(nameof(calendarTimeZone));
+            TimeSpan selectedBoundary =
+                ValidateCalendarDayBoundaryOffset(calendarDayBoundaryOffset);
+            _calendarTimeZone = selectedTimeZone;
+            _calendarDayBoundaryOffset = selectedBoundary;
+        }
 
         public IceCreamRaceState State => _serializer.Clone(_state);
         public IceCreamRaceCatalog Catalog => EventCatalog;
@@ -759,11 +774,11 @@ namespace ActionFit.IceCreamRace
 
         private static TimeSpan ValidateCalendarDayBoundaryOffset(TimeSpan offset)
         {
-            if (offset < TimeSpan.Zero || offset >= TimeSpan.FromDays(1))
+            if (offset <= -TimeSpan.FromDays(1) || offset >= TimeSpan.FromDays(1))
                 throw new ArgumentOutOfRangeException(
                     nameof(offset),
                     offset,
-                    "Calendar day boundary offset must be at least zero and less than 24 hours.");
+                    "Calendar day boundary offset must be greater than -24 hours and less than 24 hours.");
             return offset;
         }
 
